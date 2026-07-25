@@ -2,8 +2,8 @@ import {
   formatCurrency,
   formatExpenseCount,
   formatMonth,
-} from "@/lib/formatters";
-import type { Expense, UserId, UserTotals } from "@/types/expense";
+} from "../lib/formatters";
+import type { Expense, UserId, UserTotals } from "../types";
 
 type SpendingSummaryProps = {
   monthKey: string;

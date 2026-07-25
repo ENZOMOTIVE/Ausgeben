@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
-import { formatCurrency, formatMonth } from "@/lib/formatters";
-import type { MonthlySummary } from "@/types/expense";
+import { formatCurrency, formatMonth } from "../lib/formatters";
+import type { MonthlySummary } from "../types";
 
 type MonthlyArchiveProps = {
   summaries: MonthlySummary[];

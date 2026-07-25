@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { sortExpenses } from "@/lib/expenses";
+import { sortExpenses } from "../lib/expenses";
 import type {
   Expense,
   ExpenseDraft,
   ExpenseUser,
   SharedLedger,
   UserId,
-} from "@/types/expense";
+} from "../types";
 
 type SessionStatus = "loading" | "anonymous" | "authenticated";
 

@@ -12,9 +12,9 @@ import {
   formatAmountForInput,
   isValidDateString,
   parseEuroAmount,
-} from "@/lib/expenses";
-import { formatLongDate, formatMonth } from "@/lib/formatters";
-import type { Expense, ExpenseDraft } from "@/types/expense";
+} from "../lib/expenses";
+import { formatLongDate, formatMonth } from "../lib/formatters";
+import type { Expense, ExpenseDraft } from "../types";
 
 type ExpenseFormProps = {
   expense: Expense | null;

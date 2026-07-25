@@ -64,7 +64,10 @@ test("keeps itemized expenses private while sharing per-person totals", async ()
   const [api, database, clientTypes] = await Promise.all([
     readFile(new URL("../worker/api.ts", import.meta.url), "utf8"),
     readFile(new URL("../worker/database.ts", import.meta.url), "utf8"),
-    readFile(new URL("../types/expense.ts", import.meta.url), "utf8"),
+    readFile(
+      new URL("../src/features/expense-tracker/types.ts", import.meta.url),
+      "utf8",
+    ),
   ]);
 
   assert.match(database, /AND created_by = \?1/);
@@ -98,7 +101,13 @@ test("uses shared D1 storage, hardened sessions, and monthly compaction", async 
     hosting,
     envExample,
   ] = await Promise.all([
-    readFile(new URL("../hooks/use-shared-ledger.ts", import.meta.url), "utf8"),
+    readFile(
+      new URL(
+        "../src/features/expense-tracker/hooks/use-shared-ledger.ts",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
     readFile(new URL("../worker/index.ts", import.meta.url), "utf8"),
     readFile(new URL("../worker/api.ts", import.meta.url), "utf8"),
     readFile(new URL("../worker/auth.ts", import.meta.url), "utf8"),
@@ -112,11 +121,17 @@ test("uses shared D1 storage, hardened sessions, and monthly compaction", async 
       "utf8",
     ),
     readFile(
-      new URL("../components/expense-tracker/SpendingSummary.tsx", import.meta.url),
+      new URL(
+        "../src/features/expense-tracker/components/SpendingSummary.tsx",
+        import.meta.url,
+      ),
       "utf8",
     ),
     readFile(
-      new URL("../components/expense-tracker/MonthlyArchive.tsx", import.meta.url),
+      new URL(
+        "../src/features/expense-tracker/components/MonthlyArchive.tsx",
+        import.meta.url,
+      ),
       "utf8",
     ),
     readFile(new URL("../package.json", import.meta.url), "utf8"),

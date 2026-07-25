@@ -1,5 +1,5 @@
-import { ExpenseTracker } from "@/components/expense-tracker/ExpenseTracker";
-import { getTodayInBerlin } from "@/lib/expenses";
+import { ExpenseTracker } from "@/features/expense-tracker";
+import { getTodayInBerlin } from "@/features/expense-tracker/lib/expenses";
 
 export default function Home() {
   return <ExpenseTracker initialToday={getTodayInBerlin()} />;

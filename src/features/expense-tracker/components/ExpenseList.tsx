@@ -1,11 +1,11 @@
 import type { CSSProperties } from "react";
-import { groupExpensesByDate } from "@/lib/expenses";
+import { groupExpensesByDate } from "../lib/expenses";
 import {
   formatCurrency,
   formatDayLabel,
   formatExpenseCount,
-} from "@/lib/formatters";
-import type { Expense, UserId } from "@/types/expense";
+} from "../lib/formatters";
+import type { Expense, UserId } from "../types";
 
 type ExpenseListProps = {
   expenses: Expense[];

@@ -6,10 +6,10 @@ import { ExpenseList } from "./ExpenseList";
 import { LoginScreen, SessionLoading } from "./LoginScreen";
 import { MonthlyArchive } from "./MonthlyArchive";
 import { SpendingSummary } from "./SpendingSummary";
-import { useSharedLedger } from "@/hooks/use-shared-ledger";
-import { formatMonth } from "@/lib/formatters";
-import { getMonthKey, getTodayInBerlin } from "@/lib/expenses";
-import type { Expense, ExpenseDraft, ExpenseUser } from "@/types/expense";
+import { useSharedLedger } from "../hooks/use-shared-ledger";
+import { getMonthKey, getTodayInBerlin } from "../lib/expenses";
+import { formatMonth } from "../lib/formatters";
+import type { Expense, ExpenseDraft, ExpenseUser } from "../types";
 
 type ExpenseTrackerProps = {
   initialToday: string;

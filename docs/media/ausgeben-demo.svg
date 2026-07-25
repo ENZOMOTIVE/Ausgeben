@@ -1,17 +1,73 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
   <title id="title">Animated Ausgeben expense tracker preview</title>
-  <desc id="description">Carlin's total updates while Aayushman's itemized view keeps Carlin's purchase details private.</desc>
+  <desc id="description">A mobile expense dashboard animates a newly synced partner total while keeping each person's purchase details private.</desc>
   <style>
     .copy { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     .mono { font-variant-numeric: tabular-nums; }
-    .new-row { animation: row-in 5.5s ease-in-out infinite; transform-origin: center; }
-    .old-total { animation: total-out 5.5s ease-in-out infinite; }
-    .new-total { animation: total-in 5.5s ease-in-out infinite; }
-    .tap { animation: tap 5.5s ease-in-out infinite; transform-origin: 1037px 515px; }
-    .pulse { animation: pulse 5.5s ease-in-out infinite; transform-origin: center; }
+    .ambient-a { animation: ambient-a 10s ease-in-out infinite; transform-origin: center; }
+    .ambient-b { animation: ambient-b 12s ease-in-out infinite; transform-origin: center; }
+    .logo-orbit { animation: orbit 12s linear infinite; transform-origin: 107px 102px; }
+    .hero-kicker { animation: copy-breathe 5.8s ease-in-out infinite; }
+    .hero-title { animation: title-breathe 5.8s ease-in-out infinite; transform-origin: 88px 330px; }
+    .cta { animation: cta-press 5.8s ease-in-out infinite; transform-origin: 182px 500px; }
+    .cta-shine { animation: shine 5.8s cubic-bezier(.2,.6,.2,1) infinite; }
+    .phone-float { animation: phone-float 5.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    .phone-shadow { animation: shadow-breathe 5.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    .live-dot { animation: live-dot 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    .privacy-stroke { animation: privacy-dash 5.8s ease-in-out infinite; }
+    .new-row { animation: row-in 5.8s cubic-bezier(.2,.75,.24,1) infinite; transform-box: fill-box; transform-origin: center; }
+    .old-total, .partner-bar-old { animation: total-out 5.8s ease-in-out infinite; }
+    .new-total, .partner-bar-new { animation: total-in 5.8s ease-in-out infinite; }
+    .tap { animation: tap 5.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    .pulse { animation: pulse 5.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    .sync-ring { animation: sync-ring 5.8s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+    @keyframes ambient-a {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(20px, 12px) scale(1.08); }
+    }
+    @keyframes ambient-b {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-16px, -10px); }
+    }
+    @keyframes orbit { to { transform: rotate(360deg); } }
+    @keyframes copy-breathe {
+      0%, 100% { opacity: .72; }
+      35%, 76% { opacity: 1; }
+    }
+    @keyframes title-breathe {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+    @keyframes cta-press {
+      0%, 10%, 23%, 100% { transform: scale(1); }
+      15% { transform: scale(.97); }
+      19% { transform: scale(1.015); }
+    }
+    @keyframes shine {
+      0%, 5% { transform: translateX(-270px) skewX(-18deg); opacity: 0; }
+      10% { opacity: .28; }
+      25%, 100% { transform: translateX(260px) skewX(-18deg); opacity: 0; }
+    }
+    @keyframes phone-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-7px); }
+    }
+    @keyframes shadow-breathe {
+      0%, 100% { opacity: .09; transform: scale(.95); }
+      50% { opacity: .16; transform: scale(1); }
+    }
+    @keyframes live-dot {
+      0%, 100% { opacity: .45; transform: scale(.8); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+    @keyframes privacy-dash {
+      0%, 28% { stroke-dashoffset: 28; opacity: .22; }
+      42%, 88% { stroke-dashoffset: 0; opacity: .7; }
+      100% { stroke-dashoffset: -28; opacity: .22; }
+    }
     @keyframes row-in {
       0%, 24% { opacity: 0; transform: translateY(18px); }
-      36%, 84% { opacity: 1; transform: translateY(0); }
+      36%, 86% { opacity: 1; transform: translateY(0); }
       96%, 100% { opacity: 0; transform: translateY(-5px); }
     }
     @keyframes total-out {
@@ -34,45 +90,81 @@
       30%, 42% { opacity: .5; transform: scale(1.12); }
       52%, 94% { opacity: .18; transform: scale(.82); }
     }
+    @keyframes sync-ring {
+      0%, 26% { opacity: 0; transform: scale(.65); }
+      28% { opacity: .48; transform: scale(.65); }
+      48%, 100% { opacity: 0; transform: scale(1.5); }
+    }
     @media (prefers-reduced-motion: reduce) {
       * { animation: none !important; }
-      .old-total { opacity: 0; }
-      .new-total, .new-row { opacity: 1; }
+      .old-total, .partner-bar-old, .cta-shine, .sync-ring { opacity: 0; }
+      .new-total, .partner-bar-new, .new-row { opacity: 1; }
     }
   </style>
+  <defs>
+    <clipPath id="cta-clip">
+      <rect x="88" y="473" width="188" height="54" rx="27"/>
+    </clipPath>
+    <linearGradient id="phone-edge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f6f2e9"/>
+    </linearGradient>
+    <linearGradient id="accent-line" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#dfff81" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#dfff81" stop-opacity=".9"/>
+    </linearGradient>
+  </defs>
   <rect width="1200" height="630" rx="34" fill="#f2efe7"/>
+  <circle class="ambient-a" cx="465" cy="84" r="138" fill="#dfff81" opacity=".09"/>
+  <circle class="ambient-b" cx="1147" cy="581" r="176" fill="#0d3f37" opacity=".045"/>
+  <circle class="logo-orbit" cx="107" cy="102" r="39" fill="none" stroke="#0d3f37" stroke-width="1.5" stroke-dasharray="3 8" opacity=".3"/>
   <circle cx="107" cy="102" r="31" fill="#0d3f37"/>
   <text class="copy" x="107" y="112" text-anchor="middle" font-size="24" font-weight="800" fill="#dfff81">a.</text>
   <text class="copy" x="155" y="98" font-size="27" font-weight="720" fill="#16332e">Ausgeben</text>
   <text class="copy" x="155" y="122" font-size="14" font-weight="520" fill="#62736f">Shared expenses</text>
-  <text class="copy" x="88" y="240" font-size="18" font-weight="750" letter-spacing="2.2" fill="#62736f">GERMANY · SHARED LEDGER</text>
-  <text class="copy" x="88" y="302" font-size="52" font-weight="680" letter-spacing="-2.6" fill="#16332e">Our spending,</text>
-  <text class="copy" x="88" y="356" font-size="52" font-weight="680" letter-spacing="-2.6" fill="#16332e">made clear.</text>
+  <text class="copy hero-kicker" x="88" y="240" font-size="18" font-weight="750" letter-spacing="2.2" fill="#62736f">GERMANY · SHARED LEDGER</text>
+  <g class="hero-title">
+    <text class="copy" x="88" y="302" font-size="52" font-weight="680" letter-spacing="-2.6" fill="#16332e">Our spending,</text>
+    <text class="copy" x="88" y="356" font-size="52" font-weight="680" letter-spacing="-2.6" fill="#16332e">made clear.</text>
+  </g>
   <text class="copy" x="88" y="420" font-size="18" font-weight="470" fill="#62736f">Log it in seconds. See it on every device.</text>
-  <rect x="88" y="473" width="188" height="54" rx="27" fill="#0d3f37"/>
-  <text class="copy" x="182" y="507" text-anchor="middle" font-size="16" font-weight="700" fill="#ffffff">Add expense  →</text>
+  <g class="cta">
+    <rect x="88" y="473" width="188" height="54" rx="27" fill="#0d3f37"/>
+    <rect class="cta-shine" x="51" y="460" width="49" height="78" fill="#ffffff" opacity="0" clip-path="url(#cta-clip)"/>
+    <text class="copy" x="182" y="507" text-anchor="middle" font-size="16" font-weight="700" fill="#ffffff">Add expense  →</text>
+  </g>
+  <ellipse class="phone-shadow" cx="868.5" cy="584" rx="196" ry="18" fill="#0d3f37" opacity=".1"/>
   <g transform="translate(625 56)">
-    <rect width="487" height="518" rx="35" fill="#fffdf8" stroke="#d9d6cd"/>
+    <g class="phone-float">
+    <rect width="487" height="518" rx="35" fill="url(#phone-edge)" stroke="#d9d6cd"/>
     <rect x="25" y="25" width="437" height="263" rx="27" fill="#0d3f37"/>
     <circle cx="415" cy="230" r="103" fill="none" stroke="#dfff81" stroke-width="38" opacity=".12"/>
     <text class="copy" x="53" y="64" font-size="13" font-weight="620" fill="#ffffff" opacity=".62">THIS MONTH</text>
+    <circle class="live-dot" cx="383" cy="59" r="4" fill="#dfff81"/>
+    <text class="copy" x="395" y="63" font-size="9" font-weight="720" letter-spacing="1" fill="#ffffff" opacity=".62">SYNCED</text>
     <text class="copy" x="53" y="104" font-size="15" font-weight="700" fill="#dfff81">Juli 2026</text>
-    <text class="copy" x="53" y="137" font-size="10" font-weight="650" fill="#ffffff" opacity=".58">AAYUSHMAN</text>
+    <text class="copy" x="53" y="137" font-size="10" font-weight="650" fill="#ffffff" opacity=".58">YOU</text>
     <text class="copy mono" x="53" y="175" font-size="34" font-weight="660" letter-spacing="-1.6" fill="#ffffff">42,10 €</text>
-    <text class="copy" x="252" y="137" font-size="10" font-weight="650" fill="#ffffff" opacity=".58">CARLIN</text>
+    <text class="copy" x="252" y="137" font-size="10" font-weight="650" fill="#ffffff" opacity=".58">PARTNER</text>
     <g class="old-total">
       <text class="copy mono" x="252" y="175" font-size="34" font-weight="660" letter-spacing="-1.6" fill="#ffffff">44,20 €</text>
     </g>
     <g class="new-total" opacity="0">
       <text class="copy mono" x="252" y="175" font-size="34" font-weight="660" letter-spacing="-1.6" fill="#ffffff">69,00 €</text>
     </g>
-    <text class="copy" x="53" y="207" font-size="13" font-weight="500" fill="#ffffff" opacity=".56">Separate totals · private details</text>
+    <rect x="53" y="188" width="140" height="4" rx="2" fill="#ffffff" opacity=".11"/>
+    <rect x="53" y="188" width="83" height="4" rx="2" fill="url(#accent-line)"/>
+    <rect x="252" y="188" width="140" height="4" rx="2" fill="#ffffff" opacity=".11"/>
+    <rect class="partner-bar-old" x="252" y="188" width="72" height="4" rx="2" fill="url(#accent-line)"/>
+    <rect class="partner-bar-new" x="252" y="188" width="112" height="4" rx="2" fill="url(#accent-line)" opacity="0"/>
+    <text class="copy" x="53" y="211" font-size="13" font-weight="500" fill="#ffffff" opacity=".56">Separate totals · private details</text>
     <rect x="46" y="226" width="395" height="43" rx="13" fill="#ffffff" opacity=".07"/>
-    <text class="copy" x="63" y="252" font-size="11" fill="#ffffff" opacity=".7">NO COMBINED TOTAL · NO PARTNER DETAILS</text>
+    <path class="privacy-stroke" d="M62 239l8 3v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10v-6z" fill="none" stroke="#dfff81" stroke-width="1.5" stroke-linejoin="round" stroke-dasharray="28"/>
+    <text class="copy" x="83" y="252" font-size="11" fill="#ffffff" opacity=".7">NO COMBINED TOTAL · NO PARTNER DETAILS</text>
     <text class="copy" x="30" y="331" font-size="12" font-weight="750" letter-spacing="1.4" fill="#62736f">TODAY</text>
     <rect x="25" y="350" width="437" height="70" rx="18" fill="#f8f5ed" stroke="#e7e2d8"/>
     <rect x="41" y="364" width="42" height="42" rx="13" fill="#e5eed8"/>
-    <text class="copy" x="62" y="391" text-anchor="middle" font-size="15" font-weight="780" fill="#0d3f37">A</text>
+    <text class="copy" x="62" y="391" text-anchor="middle" font-size="15" font-weight="780" fill="#0d3f37">€</text>
     <text class="copy" x="99" y="382" font-size="15" font-weight="670" fill="#16332e">Morning coffee</text>
     <text class="copy" x="99" y="400" font-size="11" fill="#62736f">Your entry · tap to edit</text>
     <text class="copy mono" x="441" y="389" text-anchor="end" font-size="15" font-weight="730" fill="#16332e">4,20 €</text>
@@ -81,14 +173,16 @@
       <rect x="41" y="446" width="42" height="42" rx="13" fill="#ffe5dc"/>
       <path d="M54 467a8 8 0 0 1 16 0v4H54z" fill="none" stroke="#873c29" stroke-width="2"/>
       <rect x="52" y="469" width="20" height="15" rx="4" fill="#873c29"/>
-      <text class="copy" x="99" y="464" font-size="15" font-weight="670" fill="#16332e">Carlin's total updated</text>
+      <text class="copy" x="99" y="464" font-size="15" font-weight="670" fill="#16332e">Partner total updated</text>
       <text class="copy" x="99" y="482" font-size="11" fill="#62736f">Purchase details stay private</text>
       <text class="copy mono" x="441" y="471" text-anchor="end" font-size="15" font-weight="730" fill="#16332e">+24,80 €</text>
     </g>
-  </g>
-  <circle class="pulse" cx="1037" cy="515" r="34" fill="#dfff81" opacity=".18"/>
-  <g class="tap">
-    <circle cx="1037" cy="515" r="24" fill="#0d3f37"/>
-    <path d="M1037 504v22M1026 515h22" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+    <circle class="sync-ring" cx="412" cy="459" r="28" fill="none" stroke="#dfff81" stroke-width="3" opacity="0"/>
+    <circle class="pulse" cx="412" cy="459" r="34" fill="#dfff81" opacity=".18"/>
+    <g class="tap">
+      <circle cx="412" cy="459" r="24" fill="#0d3f37"/>
+      <path d="M412 448v22M401 459h22" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    </g>
   </g>
 </svg>

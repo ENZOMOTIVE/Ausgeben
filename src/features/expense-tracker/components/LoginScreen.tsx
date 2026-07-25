@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
-import type { UserId } from "@/types/expense";
+import type { UserId } from "../types";
 
 const ACCOUNTS: Array<{ id: UserId; name: string }> = [
   { id: "aayushman", name: "Aayushman" },

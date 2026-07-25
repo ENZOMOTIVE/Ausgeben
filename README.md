@@ -3,7 +3,9 @@
 
   # Ausgeben
 
-  **A private, phone-first shared expense tracker for two people in Germany.**
+  **A private, phone-first expense tracker built for everyday life.**
+
+  <sub>Fast entries · Separate totals · Cross-device sync · Privacy by design</sub>
 
   <p>
     <img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16.2-111111?logo=nextdotjs">
@@ -17,29 +19,29 @@
   <img
     src="./docs/media/ausgeben-demo.svg"
     width="900"
-    alt="Animated preview of adding an expense and updating Carlin's total while Aayushman's stays separate"
+    alt="Animated preview of adding an expense and seeing a personal total update"
   >
 </p>
 
-Ausgeben gives **Aayushman** and **Carlin** one ledger that stays in sync
-across signed-in devices. Each person keeps their own itemized log, can see
-the other person's total, and gets one compact pair of totals for every closed
-month.
+Ausgeben turns daily expense tracking into a quick, focused mobile workflow.
+Add a purchase in seconds, keep personal entries private, follow separate
+member totals, and stay in sync across signed-in devices. At the end of each
+month, detailed history becomes a compact summary automatically.
 
 ## What it does
 
 - Records a description, euro amount, and date in a phone-friendly form.
-- Shows Aayushman’s and Carlin’s spending separately for today and the current
-  month; it never presents a combined euro total.
-- Shows itemized entries only to their creator; the other person sees the total
+- Shows each member’s spending separately for today and the current month; it
+  never presents a combined euro total.
+- Shows itemized entries only to their creator; other members see the total
   amount, not descriptions or individual purchases.
 - Lets only an entry's creator edit or delete it.
 - Refreshes when the app regains focus so changes from another device appear.
 - Stores authoritative data in Cloudflare D1 instead of browser storage.
 - Formats money with `de-DE` rules and keeps amounts as integer cents.
 
-Only the two fixed account names above are accepted. Passwords are never stored
-in this repository or documented here.
+The current private deployment uses an allowlisted account set. Passwords are
+never stored in this repository or documented here.
 
 ## Monthly lifecycle
 
@@ -50,19 +52,19 @@ closes, its details can no longer be added to or changed.
 On the first ledger read or mutation in a new month, one atomic D1 batch:
 
 1. advances the canonical month without allowing it to move backwards;
-2. adds every older month’s Aayushman amount, Carlin amount, and entry count to
-   its summary; and
+2. adds every older month’s separate per-member totals and entry counts to its
+   summary; and
 3. deletes the corresponding detailed expense rows.
 
 The archive then exposes one non-editable row such as
-**July — Aayushman 198,10 € · Carlin 225,08 €**.
+**July — You 198,10 € · Member 225,08 €**.
 The additive upsert and deletion happen in the same transaction, so retries and
 concurrent requests cannot double-count a month.
 
 ```mermaid
 flowchart LR
     A[Current-month details] -->|German month changes| B[Atomic D1 rollover]
-    B --> C[Month — separate Aayushman and Carlin totals]
+    B --> C[Month — separate member totals]
     B --> D[Old detail rows deleted]
 ```
 
@@ -155,7 +157,7 @@ initialization for a fresh local database.
 
 | Method | Endpoint | Purpose |
 |---|---|---|
-| `POST` | `/api/auth/login` | Verify one of the two accounts and set a session cookie |
+| `POST` | `/api/auth/login` | Verify an allowed account and set a session cookie |
 | `GET` | `/api/auth/session` | Return the signed-in account |
 | `POST` | `/api/auth/logout` | Expire the session cookie |
 | `GET` | `/api/ledger` | Return the caller's details, per-person totals, and monthly summaries |
@@ -182,18 +184,14 @@ human-readable message.
 
 ```text
 Ausgeben/
-├── app/                              # App Router page, metadata, and styles
-│   └── api/[...path]/route.ts        # Vercel-to-Cloudflare API bridge
-├── components/expense-tracker/
-│   ├── ExpenseTracker.tsx            # Authenticated feature orchestration
-│   ├── LoginScreen.tsx               # Two-account sign-in screen
-│   ├── ExpenseForm.tsx               # Add/edit bottom sheet
-│   ├── ExpenseList.tsx               # Current-month detailed entries
-│   ├── SpendingSummary.tsx           # Separate today and current-month totals
-│   └── MonthlyArchive.tsx            # Separate totals per closed month
-├── hooks/use-shared-ledger.ts         # Session, API, refresh, and mutation state
-├── lib/                               # Validation, sorting, and EUR/date formatting
-├── types/expense.ts                   # Client domain and API types
+├── app/                               # Next.js routes, metadata, and global styles
+│   └── api/[...path]/route.ts         # Vercel-to-Cloudflare API bridge
+├── src/features/expense-tracker/      # Complete frontend feature boundary
+│   ├── components/                    # Tracker, sign-in, form, list, and summaries
+│   ├── hooks/use-shared-ledger.ts      # Session, refresh, and mutation state
+│   ├── lib/                            # Expense rules plus EUR/date formatting
+│   ├── types.ts                       # Client domain and API contracts
+│   └── index.ts                       # Public client-feature entry point
 ├── worker/
 │   ├── index.ts                       # Worker and vinext request entry point
 │   ├── api.ts                         # JSON routes and request protections
@@ -214,11 +212,11 @@ Ausgeben/
 
 - Expense descriptions, amounts, dates, creator IDs, monthly summaries, and
   rate-limit counters are stored in the configured Cloudflare D1 database.
-- Each account can see only its own current-month entries. Both accounts see
-  Aayushman’s and Carlin’s separate totals.
+- Each account can see only its own current-month entries. Members see one
+  another’s separate totals without seeing private purchase details.
 - Closed-month details are deleted from the active database and are not
-  available through the application; only the two per-person summary totals
-  are exposed.
+  available through the application; only per-member summary totals are
+  exposed.
 - There is no category system, budget, export, receipt upload, offline write
   queue, or conflict-resolution interface.
 - A network connection is required to read or change the ledger.
