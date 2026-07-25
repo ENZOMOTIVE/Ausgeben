@@ -87,7 +87,8 @@ flowchart LR
 |---|---|
 | Interface | Next.js 16, React 19, TypeScript 5.9 |
 | Styling | Tailwind CSS 4 foundation with responsive custom CSS |
-| Runtime | vinext, Vite 8, Cloudflare Workers |
+| Hosting | Vercel frontend with a same-origin API bridge |
+| API runtime | vinext, Vite 8, Cloudflare Workers |
 | Persistence | Cloudflare D1 with raw prepared statements and atomic batches |
 | Schema | Drizzle schema definitions and generated SQL migrations |
 | Authentication | Web Crypto PBKDF2 and HMAC-signed cookies |
@@ -115,6 +116,27 @@ Before starting, replace every placeholder in `.env.local`:
 Real secrets belong only in ignored local environment files and the hosted
 Sites runtime configuration. Never commit them. The Cloudflare Vite plugin
 provides a persistent local D1 binding during development.
+
+## Vercel deployment
+
+The standard Vercel build is configured by `vercel.json` and runs:
+
+```bash
+npm run build:vercel
+```
+
+On Vercel, the catch-all `/api/*` Route Handler forwards same-origin requests
+to the existing Cloudflare Worker. Its D1 database remains the single source
+of truth, so both deployments see the same expenses and no second Vercel
+database is required. Session cookies remain `HttpOnly` and host-only on the
+Vercel domain.
+
+The deployment uses Vercel Hobby without a Vercel database, Blob store, or
+paid Marketplace add-on. Cloudflare D1 remains on its independent free tier.
+
+The bridge accepts only the fixed API origin, checks same-origin writes, and
+forwards an explicit header allowlist. The Worker repeats its authentication,
+authorization, and request validation before touching D1.
 
 ## Database migrations
 
@@ -150,6 +172,7 @@ human-readable message.
 |---|---|
 | `npm run dev` | Start the vinext development server and local D1 runtime |
 | `npm run build` | Build the Cloudflare Worker application |
+| `npm run build:vercel` | Build the standard Next.js application for Vercel |
 | `npm run start` | Run the production build locally |
 | `npm run lint` | Check the source with ESLint |
 | `npm test` | Build and run rendered-output and architecture tests |
@@ -160,6 +183,7 @@ human-readable message.
 ```text
 Ausgeben/
 ├── app/                              # App Router page, metadata, and styles
+│   └── api/[...path]/route.ts        # Vercel-to-Cloudflare API bridge
 ├── components/expense-tracker/
 │   ├── ExpenseTracker.tsx            # Authenticated feature orchestration
 │   ├── LoginScreen.tsx               # Two-account sign-in screen
@@ -182,7 +206,8 @@ Ausgeben/
 ├── public/                            # App icon and social preview
 ├── tests/                             # Production-render and architecture tests
 ├── .env.example                       # Non-secret configuration template
-└── .openai/hosting.json               # Sites D1 binding declaration
+├── .openai/hosting.json               # Sites D1 binding declaration
+└── vercel.json                        # Standard Next.js Vercel build settings
 ```
 
 ## Privacy and limitations
