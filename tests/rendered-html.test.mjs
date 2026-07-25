@@ -28,6 +28,9 @@ test("server-renders the shared Ausgeben application shell", async () => {
   assert.match(html, /shared expense tracker for two people in Germany/i);
   assert.doesNotMatch(html, /Passau/i);
   assert.match(html, /Opening your shared ledger/i);
+  assert.match(html, /rel="manifest" href="[^"]*\/manifest\.webmanifest"/i);
+  assert.match(html, /rel="apple-touch-icon" href="[^"]*\/icon\.png"/i);
+  assert.match(html, /name="mobile-web-app-capable" content="yes"/i);
   assert.doesNotMatch(html, /No account|No database|codex-preview/i);
 });
 

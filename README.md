@@ -28,6 +28,15 @@ Add a purchase in seconds, keep personal entries private, follow separate
 member totals, and stay in sync across signed-in devices. At the end of each
 month, detailed history becomes a compact summary automatically.
 
+## Add it to your iPhone
+
+1. Open [ausgeben.vercel.app](https://ausgeben.vercel.app) in Safari.
+2. Tap **Share**, then **Add to Home Screen**.
+3. Keep **Open as Web App** enabled if iOS shows that option, then tap **Add**.
+
+Ausgeben will appear with its own icon and open in a standalone, app-like
+window. It still needs an internet connection to read or save expenses.
+
 ## What it does
 
 - Records a description, euro amount, and date in a phone-friendly form.
