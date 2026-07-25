@@ -61,13 +61,6 @@ The archive then exposes one non-editable row such as
 The additive upsert and deletion happen in the same transaction, so retries and
 concurrent requests cannot double-count a month.
 
-```mermaid
-flowchart LR
-    A[Current-month details] -->|German month changes| B[Atomic D1 rollover]
-    B --> C[Month — separate member totals]
-    B --> D[Old detail rows deleted]
-```
-
 ## Authentication and security
 
 - Passwords are checked against per-account PBKDF2-SHA-256 verifiers with
