@@ -2,56 +2,118 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-async function render() {
+async function loadWorker() {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
-
-  return worker.fetch(
-    new Request("http://localhost/", {
-      headers: { accept: "text/html" },
-    }),
-    {
-      ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
-      },
-    },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
-    },
-  );
+  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}-${Math.random()}`);
+  return (await import(workerUrl.href)).default;
 }
 
-test("server-renders the Ausgeben application shell", async () => {
-  const response = await render();
+const assets = {
+  fetch: async () => new Response("Not found", { status: 404 }),
+};
+
+test("server-renders the shared Ausgeben application shell", async () => {
+  const worker = await loadWorker();
+  const response = await worker.fetch(
+    new Request("http://localhost/", { headers: { accept: "text/html" } }),
+    { ASSETS: assets },
+    { waitUntil() {}, passThroughOnException() {} },
+  );
+
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
   assert.match(html, /<title>Ausgeben — Personal expense tracker<\/title>/i);
-  assert.match(html, /Passau, Germany/);
-  assert.match(html, /Your spending/);
-  assert.match(html, /Add expense/);
-  assert.match(html, /No account\. No database\./);
-  assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
+  assert.match(html, /shared expense tracker for two people in Passau/i);
+  assert.match(html, /Opening your shared ledger/i);
+  assert.doesNotMatch(html, /No account|No database|codex-preview/i);
 });
 
-test("keeps expense data local and leaves remote storage disabled", async () => {
-  const [hook, storage, page, layout, packageJson, hosting] = await Promise.all([
-    readFile(new URL("../hooks/use-local-expenses.ts", import.meta.url), "utf8"),
-    readFile(new URL("../lib/expenses.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+test("protects ledger APIs before they reach persistence", async () => {
+  const worker = await loadWorker();
+  const context = { waitUntil() {}, passThroughOnException() {} };
+
+  const ledgerResponse = await worker.fetch(
+    new Request("http://localhost/api/ledger"),
+    { ASSETS: assets },
+    context,
+  );
+  assert.equal(ledgerResponse.status, 401);
+  assert.equal(ledgerResponse.headers.get("cache-control"), "no-store");
+  assert.deepEqual(await ledgerResponse.json(), {
+    error: { code: "UNAUTHENTICATED", message: "Sign in to continue." },
+    message: "Sign in to continue.",
+  });
+
+  const crossOriginWrite = await worker.fetch(
+    new Request("http://localhost/api/auth/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ userId: "aayushman", password: "not-a-secret" }),
+    }),
+    { ASSETS: assets },
+    context,
+  );
+  assert.equal(crossOriginWrite.status, 403);
+  assert.match(await crossOriginWrite.text(), /INVALID_ORIGIN/);
+});
+
+test("uses shared D1 storage, hardened sessions, and monthly compaction", async () => {
+  const [
+    hook,
+    workerEntry,
+    api,
+    auth,
+    database,
+    migration,
+    packageJson,
+    hosting,
+    envExample,
+  ] = await Promise.all([
+    readFile(new URL("../hooks/use-shared-ledger.ts", import.meta.url), "utf8"),
+    readFile(new URL("../worker/index.ts", import.meta.url), "utf8"),
+    readFile(new URL("../worker/api.ts", import.meta.url), "utf8"),
+    readFile(new URL("../worker/auth.ts", import.meta.url), "utf8"),
+    readFile(new URL("../worker/database.ts", import.meta.url), "utf8"),
+    readFile(
+      new URL("../drizzle/0000_neat_ser_duncan.sql", import.meta.url),
+      "utf8",
+    ),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("../.openai/hosting.json", import.meta.url), "utf8"),
+    readFile(new URL("../.env.example", import.meta.url), "utf8"),
   ]);
 
-  assert.match(hook, /window\.localStorage/);
-  assert.match(storage, /ausgeben:expenses:v1/);
-  assert.doesNotMatch(hook, /\bfetch\s*\(/);
-  assert.match(page, /ExpenseTracker/);
-  assert.match(layout, /Personal expense tracker/);
-  assert.doesNotMatch(packageJson, /drizzle|react-loading-skeleton/);
-  assert.deepEqual(JSON.parse(hosting), { d1: null, r2: null });
+  assert.match(hook, /fetch\(path/);
+  assert.match(hook, /X-Ausgeben-Request/);
+  assert.doesNotMatch(hook, /localStorage/);
+
+  assert.match(workerEntry, /handleApiRequest/);
+  assert.match(api, /\/api\/auth\/login/);
+  assert.match(api, /\/api\/expenses/);
+  assert.match(api, /Cache-Control/);
+
+  assert.match(auth, /PBKDF2/);
+  assert.match(auth, /600_000/);
+  assert.match(auth, /HMAC/);
+  assert.match(auth, /HttpOnly/);
+  assert.match(auth, /SameSite=Strict/);
+  assert.match(auth, /RATE_LIMIT_ATTEMPTS = 5/);
+
+  assert.match(database, /Europe\/Berlin/);
+  assert.match(database, /db\.batch/);
+  assert.match(database, /monthly_summaries\.total_cents \+ excluded\.total_cents/);
+  assert.match(database, /DELETE FROM expenses/);
+  assert.match(migration, /CREATE TABLE `expenses`/);
+  assert.match(migration, /CREATE TABLE `monthly_summaries`/);
+
+  assert.match(packageJson, /drizzle-kit/);
+  assert.deepEqual(JSON.parse(hosting), {
+    project_id: "appgprj_6a64dd4e5c2881919158461d8ccae0f8",
+    d1: "DB",
+    r2: null,
+  });
+  assert.match(envExample, /replace-with-at-least-32-random-bytes/);
+  assert.doesNotMatch(envExample, /ZWyC7dla|aJ-hvpeR|ra-TXOPR/);
 });

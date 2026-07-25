@@ -3,38 +3,95 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ExpenseForm } from "./ExpenseForm";
 import { ExpenseList } from "./ExpenseList";
+import { LoginScreen, SessionLoading } from "./LoginScreen";
+import { MonthlyArchive } from "./MonthlyArchive";
 import { SpendingSummary } from "./SpendingSummary";
-import { useLocalExpenses } from "@/hooks/use-local-expenses";
+import { useSharedLedger } from "@/hooks/use-shared-ledger";
 import { formatMonth } from "@/lib/formatters";
-import { getMonthKey, shiftMonthKey } from "@/lib/expenses";
-import type { Expense, ExpenseDraft } from "@/types/expense";
+import { getMonthKey, getTodayInBerlin } from "@/lib/expenses";
+import type { Expense, ExpenseDraft, ExpenseUser } from "@/types/expense";
 
 type ExpenseTrackerProps = {
   initialToday: string;
 };
 
+type AccountMenuProps = {
+  user: ExpenseUser;
+  isLoggingOut: boolean;
+  onLogout: () => Promise<boolean>;
+};
+
+function AccountMenu({ user, isLoggingOut, onLogout }: AccountMenuProps) {
+  return (
+    <details className="account-menu">
+      <summary aria-label={`Signed in as ${user.displayName}. Open account menu.`}>
+        <span className={`header-avatar header-avatar-${user.id}`} aria-hidden="true">
+          {user.displayName.charAt(0)}
+        </span>
+        <span className="header-user-name">{user.displayName}</span>
+        <span className="account-menu-chevron" aria-hidden="true">⌄</span>
+      </summary>
+      <div className="account-popover">
+        <div>
+          <span className="sync-dot" aria-hidden="true" />
+          <p>
+            <small>Signed in as</small>
+            <strong>{user.displayName}</strong>
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={isLoggingOut}
+          onClick={() => void onLogout()}
+        >
+          {isLoggingOut ? "Logging out…" : "Log out"}
+        </button>
+      </div>
+    </details>
+  );
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error && error.message.trim()
+    ? error.message
+    : "That change could not be saved. Please try again.";
+}
+
 export function ExpenseTracker({ initialToday }: ExpenseTrackerProps) {
   const {
-    expenses,
-    isReady,
-    storageError,
+    sessionStatus,
+    user,
+    ledger,
+    authError,
+    ledgerError,
+    isAuthenticating,
+    isLoggingOut,
+    isRefreshing,
+    dismissAuthError,
+    login,
+    logout,
+    refreshLedger,
     addExpense,
     updateExpense,
     deleteExpense,
-  } = useLocalExpenses();
-  const currentMonthKey = getMonthKey(initialToday);
-  const [selectedMonthKey, setSelectedMonthKey] = useState(currentMonthKey);
+  } = useSharedLedger();
+  const [today, setToday] = useState(initialToday);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState("");
 
-  const monthExpenses = useMemo(
-    () => expenses.filter((expense) => getMonthKey(expense.date) === selectedMonthKey),
-    [expenses, selectedMonthKey],
-  );
+  const currentMonthKey = ledger?.currentMonth ?? getMonthKey(today);
+  const expenses = useMemo(() => ledger?.expenses ?? [], [ledger?.expenses]);
   const todayExpenses = useMemo(
-    () => expenses.filter((expense) => expense.date === initialToday),
-    [expenses, initialToday],
+    () => expenses.filter((expense) => expense.date === today),
+    [expenses, today],
+  );
+  const archivedMonths = useMemo(
+    () => (ledger?.monthlySummaries ?? []).filter(
+      (summary) => summary.monthKey < currentMonthKey,
+    ),
+    [currentMonthKey, ledger?.monthlySummaries],
   );
 
   useEffect(() => {
@@ -43,41 +100,86 @@ export function ExpenseTracker({ initialToday }: ExpenseTrackerProps) {
     return () => window.clearTimeout(timer);
   }, [statusMessage]);
 
+  useEffect(() => {
+    const updateToday = () => setToday(getTodayInBerlin());
+    const updateWhenVisible = () => {
+      if (document.visibilityState === "visible") updateToday();
+    };
+
+    window.addEventListener("focus", updateToday);
+    document.addEventListener("visibilitychange", updateWhenVisible);
+    return () => {
+      window.removeEventListener("focus", updateToday);
+      document.removeEventListener("visibilitychange", updateWhenVisible);
+    };
+  }, []);
+
   const closeForm = useCallback(() => {
     setIsFormOpen(false);
     setEditingExpense(null);
+    setFormError(null);
   }, []);
 
   const openNewExpense = () => {
+    if (!ledger) return;
     setEditingExpense(null);
+    setFormError(null);
     setIsFormOpen(true);
   };
 
   const openExpense = (expense: Expense) => {
+    if (!user || expense.createdBy !== user.id) return;
     setEditingExpense(expense);
+    setFormError(null);
     setIsFormOpen(true);
   };
 
-  const handleSubmit = (draft: ExpenseDraft): boolean => {
-    const savedExpense = editingExpense
-      ? updateExpense(editingExpense.id, draft)
-      : addExpense(draft);
+  const handleSubmit = async (draft: ExpenseDraft): Promise<boolean> => {
+    setFormError(null);
 
-    if (!savedExpense) return false;
-
-    setSelectedMonthKey(getMonthKey(savedExpense.date));
-    setStatusMessage(editingExpense ? "Expense updated" : "Expense saved");
-    closeForm();
-    return true;
+    try {
+      if (editingExpense) {
+        await updateExpense(editingExpense.id, draft);
+        setStatusMessage("Expense updated for both of you");
+      } else {
+        await addExpense(draft);
+        setStatusMessage("Expense added to the shared ledger");
+      }
+      closeForm();
+      return true;
+    } catch (error) {
+      setFormError(getErrorMessage(error));
+      return false;
+    }
   };
 
-  const handleDelete = (): boolean => {
-    if (!editingExpense || !deleteExpense(editingExpense.id)) return false;
+  const handleDelete = async (): Promise<boolean> => {
+    if (!editingExpense) return false;
+    setFormError(null);
 
-    setStatusMessage("Expense deleted");
-    closeForm();
-    return true;
+    try {
+      await deleteExpense(editingExpense.id);
+      setStatusMessage("Expense deleted");
+      closeForm();
+      return true;
+    } catch (error) {
+      setFormError(getErrorMessage(error));
+      return false;
+    }
   };
+
+  if (sessionStatus === "loading") return <SessionLoading />;
+
+  if (sessionStatus === "anonymous" || !user) {
+    return (
+      <LoginScreen
+        error={authError}
+        isSubmitting={isAuthenticating}
+        onDismissError={dismissAuthError}
+        onLogin={login}
+      />
+    );
+  }
 
   return (
     <main className="app-shell">
@@ -86,70 +188,81 @@ export function ExpenseTracker({ initialToday }: ExpenseTrackerProps) {
           <span className="brand-mark" aria-hidden="true">a.</span>
           <span>
             <strong>Ausgeben</strong>
-            <small>Personal expenses</small>
+            <small>Shared expenses</small>
           </span>
         </a>
-        <div className="local-badge" title="Saved in this browser on this device">
-          <span aria-hidden="true" />
-          Only on this device
-        </div>
+        <AccountMenu user={user} isLoggingOut={isLoggingOut} onLogout={logout} />
       </header>
 
       <div className="page-intro" id="top">
         <div>
           <p className="eyebrow location-label">Passau, Germany</p>
-          <h1>Your spending,<br />made clear.</h1>
+          <h1>Our spending,<br />made clear.</h1>
         </div>
-        <button className="primary-button desktop-add" type="button" onClick={openNewExpense}>
+        <button
+          className="primary-button desktop-add"
+          type="button"
+          onClick={openNewExpense}
+          disabled={!ledger}
+        >
           <span aria-hidden="true">＋</span>
           Add expense
         </button>
       </div>
 
-      {storageError ? (
-        <div className="storage-alert" role="alert">
+      {ledgerError ? (
+        <div className="sync-alert" role="alert">
           <span aria-hidden="true">!</span>
-          <p>{storageError}</p>
+          <p>{ledgerError}</p>
+          <button
+            type="button"
+            disabled={isRefreshing}
+            onClick={() => void refreshLedger()}
+          >
+            {isRefreshing ? "Retrying…" : "Try again"}
+          </button>
         </div>
       ) : null}
 
       <SpendingSummary
-        monthKey={selectedMonthKey}
-        monthExpenses={monthExpenses}
+        monthKey={currentMonthKey}
+        monthExpenses={expenses}
         todayExpenses={todayExpenses}
-        canGoForward={selectedMonthKey < currentMonthKey}
-        onPreviousMonth={() => setSelectedMonthKey((month) => shiftMonthKey(month, -1))}
-        onNextMonth={() => {
-          if (selectedMonthKey < currentMonthKey) {
-            setSelectedMonthKey((month) => shiftMonthKey(month, 1));
-          }
-        }}
+        isReady={Boolean(ledger)}
       />
 
       <section className="spending-log" aria-labelledby="spending-log-title">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Your history</p>
+            <p className="eyebrow">Current details</p>
             <h2 id="spending-log-title">Spending log</h2>
           </div>
-          <p>{formatMonth(selectedMonthKey)}</p>
+          <p>{formatMonth(currentMonthKey)}</p>
         </div>
 
         <ExpenseList
-          expenses={monthExpenses}
-          today={initialToday}
-          isReady={isReady}
-          emptyMonthLabel={formatMonth(selectedMonthKey)}
+          expenses={expenses}
+          today={today}
+          isReady={Boolean(ledger)}
+          emptyMonthLabel={formatMonth(currentMonthKey)}
+          currentUserId={user.id}
           onEdit={openExpense}
         />
       </section>
 
+      <MonthlyArchive summaries={archivedMonths} isReady={Boolean(ledger)} />
+
       <footer className="app-footer">
-        <p><span aria-hidden="true">●</span> Stored locally in your browser</p>
-        <p>No account. No database.</p>
+        <p><span aria-hidden="true">●</span> Saved to your shared ledger</p>
+        <p>Available on every signed-in device.</p>
       </footer>
 
-      <button className="mobile-add" type="button" onClick={openNewExpense}>
+      <button
+        className="mobile-add"
+        type="button"
+        onClick={openNewExpense}
+        disabled={!ledger}
+      >
         <span aria-hidden="true">＋</span>
         Add expense
       </button>
@@ -157,7 +270,9 @@ export function ExpenseTracker({ initialToday }: ExpenseTrackerProps) {
       {isFormOpen ? (
         <ExpenseForm
           expense={editingExpense}
-          defaultDate={initialToday}
+          defaultDate={today}
+          currentMonth={currentMonthKey}
+          submitError={formError}
           onSubmit={handleSubmit}
           onDelete={editingExpense ? handleDelete : null}
           onClose={closeForm}

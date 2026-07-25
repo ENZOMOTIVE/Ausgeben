@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 const title = "Ausgeben — Personal expense tracker";
 const description =
-  "A private, phone-first expense tracker for daily life in Passau, Germany.";
+  "A private, shared expense tracker for two people in Passau, Germany.";
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();

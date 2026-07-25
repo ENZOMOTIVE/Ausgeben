@@ -13,14 +13,16 @@ import {
   isValidDateString,
   parseEuroAmount,
 } from "@/lib/expenses";
-import { formatLongDate } from "@/lib/formatters";
+import { formatLongDate, formatMonth } from "@/lib/formatters";
 import type { Expense, ExpenseDraft } from "@/types/expense";
 
 type ExpenseFormProps = {
   expense: Expense | null;
   defaultDate: string;
-  onSubmit: (draft: ExpenseDraft) => boolean;
-  onDelete: (() => boolean) | null;
+  currentMonth: string;
+  submitError: string | null;
+  onSubmit: (draft: ExpenseDraft) => Promise<boolean>;
+  onDelete: (() => Promise<boolean>) | null;
   onClose: () => void;
 };
 
@@ -33,6 +35,8 @@ type FormErrors = {
 export function ExpenseForm({
   expense,
   defaultDate,
+  currentMonth,
+  submitError,
   onSubmit,
   onDelete,
   onClose,
@@ -51,6 +55,8 @@ export function ExpenseForm({
   const [date, setDate] = useState(expense?.date ?? defaultDate);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [isBusy, setIsBusy] = useState(false);
+  const minimumDate = `${currentMonth}-01`;
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -83,8 +89,12 @@ export function ExpenseForm({
       nextErrors.description = "Add what you spent the money on.";
     }
 
-    if (!isValidDateString(date) || date > defaultDate) {
-      nextErrors.date = "Choose today or an earlier date.";
+    if (
+      !isValidDateString(date) ||
+      date < minimumDate ||
+      date > defaultDate
+    ) {
+      nextErrors.date = `Choose a date in ${formatMonth(currentMonth)}.`;
     }
 
     setErrors(nextErrors);
@@ -93,6 +103,7 @@ export function ExpenseForm({
       amountCents === null ||
       !normalizedDescription ||
       !isValidDateString(date) ||
+      date < minimumDate ||
       date > defaultDate
     ) {
       return null;
@@ -105,26 +116,39 @@ export function ExpenseForm({
     };
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (isBusy) return;
     const draft = validate();
 
-    if (draft) onSubmit(draft);
+    if (!draft) return;
+
+    setIsBusy(true);
+    try {
+      await onSubmit(draft);
+    } finally {
+      setIsBusy(false);
+    }
   };
 
   const handleBackdrop = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.currentTarget === event.target) onClose();
+    if (!isBusy && event.currentTarget === event.target) onClose();
   };
 
-  const handleDelete = () => {
-    if (!onDelete) return;
+  const handleDelete = async () => {
+    if (!onDelete || isBusy) return;
 
     if (!isConfirmingDelete) {
       setIsConfirmingDelete(true);
       return;
     }
 
-    onDelete();
+    setIsBusy(true);
+    try {
+      await onDelete();
+    } finally {
+      setIsBusy(false);
+    }
   };
 
   return (
@@ -134,6 +158,7 @@ export function ExpenseForm({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        aria-busy={isBusy}
       >
         <div className="sheet-handle" aria-hidden="true" />
 
@@ -142,7 +167,12 @@ export function ExpenseForm({
             <p className="eyebrow">{expense ? "Make a correction" : "Quick entry"}</p>
             <h2 id={titleId}>{expense ? "Edit expense" : "Add an expense"}</h2>
           </div>
-          <button className="icon-button close-button" type="button" onClick={onClose}>
+          <button
+            className="icon-button close-button"
+            type="button"
+            onClick={onClose}
+            disabled={isBusy}
+          >
             <span aria-hidden="true">×</span>
             <span className="sr-only">Close expense form</span>
           </button>
@@ -214,6 +244,7 @@ export function ExpenseForm({
               id="expense-date"
               name="date"
               type="date"
+              min={minimumDate}
               max={defaultDate}
               value={date}
               onChange={(event) => {
@@ -230,22 +261,38 @@ export function ExpenseForm({
             ) : null}
           </div>
 
+          {submitError ? (
+            <div className="form-submit-error" role="alert">
+              <span aria-hidden="true">!</span>
+              <p>{submitError}</p>
+            </div>
+          ) : null}
+
           <div className="sheet-actions">
             {expense && onDelete ? (
               <button
                 className={isConfirmingDelete ? "delete-button confirming" : "delete-button"}
                 type="button"
-                onClick={handleDelete}
+                onClick={() => void handleDelete()}
                 onBlur={() => setIsConfirmingDelete(false)}
+                disabled={isBusy}
               >
-                {isConfirmingDelete ? "Tap again to delete" : "Delete"}
+                {isBusy
+                  ? "Working…"
+                  : isConfirmingDelete
+                    ? "Tap again to delete"
+                    : "Delete"}
               </button>
             ) : (
               <span />
             )}
-            <button className="primary-button save-button" type="submit">
-              {expense ? "Save changes" : "Save expense"}
-              <span aria-hidden="true">→</span>
+            <button className="primary-button save-button" type="submit" disabled={isBusy}>
+              {isBusy ? "Saving…" : expense ? "Save changes" : "Save expense"}
+              {isBusy ? (
+                <span className="button-spinner" aria-hidden="true" />
+              ) : (
+                <span aria-hidden="true">→</span>
+              )}
             </button>
           </div>
         </form>

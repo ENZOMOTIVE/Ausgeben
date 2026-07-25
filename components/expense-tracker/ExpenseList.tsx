@@ -5,14 +5,20 @@ import {
   formatDayLabel,
   formatExpenseCount,
 } from "@/lib/formatters";
-import type { Expense } from "@/types/expense";
+import type { Expense, UserId } from "@/types/expense";
 
 type ExpenseListProps = {
   expenses: Expense[];
   today: string;
   isReady: boolean;
   emptyMonthLabel: string;
+  currentUserId: UserId;
   onEdit: (expense: Expense) => void;
+};
+
+const USER_NAMES: Record<UserId, string> = {
+  aayushman: "Aayushman",
+  carlin: "Carlin",
 };
 
 export function ExpenseList({
@@ -20,6 +26,7 @@ export function ExpenseList({
   today,
   isReady,
   emptyMonthLabel,
+  currentUserId,
   onEdit,
 }: ExpenseListProps) {
   if (!isReady) {
@@ -61,30 +68,60 @@ export function ExpenseList({
           </div>
 
           <ul className="expense-list" aria-label={`Expenses for ${group.date}`}>
-            {group.expenses.map((expense, index) => (
-              <li
-                key={expense.id}
-                className="expense-item"
-                style={{ "--item-index": index } as CSSProperties}
-              >
-                <button type="button" onClick={() => onEdit(expense)}>
-                  <span className="expense-marker" aria-hidden="true">
-                    {expense.description.charAt(0).toUpperCase()}
+            {group.expenses.map((expense, index) => {
+              const isOwnExpense = expense.createdBy === currentUserId;
+              const ownerName = USER_NAMES[expense.createdBy];
+              const content = (
+                <>
+                  <span
+                    className={`expense-marker expense-marker-${expense.createdBy}`}
+                    aria-hidden="true"
+                  >
+                    {ownerName.charAt(0)}
                   </span>
                   <span className="expense-copy">
                     <strong>{expense.description}</strong>
-                    <small>Edit entry</small>
+                    <small>
+                      <span>{ownerName}</span>
+                      <span aria-hidden="true">·</span>
+                      {isOwnExpense ? "Tap to edit" : "Shared entry"}
+                    </small>
                   </span>
                   <span className="expense-amount">
                     {formatCurrency(expense.amountCents)}
                   </span>
-                  <span className="expense-arrow" aria-hidden="true">›</span>
-                  <span className="sr-only">
-                    Edit {expense.description}, {formatCurrency(expense.amountCents)}
-                  </span>
-                </button>
-              </li>
-            ))}
+                  {isOwnExpense ? (
+                    <span className="expense-arrow" aria-hidden="true">›</span>
+                  ) : (
+                    <span className="expense-shared-dot" aria-hidden="true" />
+                  )}
+                </>
+              );
+
+              return (
+                <li
+                  key={expense.id}
+                  className={isOwnExpense ? "expense-item own-expense" : "expense-item"}
+                  style={{ "--item-index": index } as CSSProperties}
+                >
+                  {isOwnExpense ? (
+                    <button type="button" onClick={() => onEdit(expense)}>
+                      {content}
+                      <span className="sr-only">
+                        Edit your {expense.description} expense, {formatCurrency(expense.amountCents)}
+                      </span>
+                    </button>
+                  ) : (
+                    <div className="expense-row">
+                      {content}
+                      <span className="sr-only">
+                        {ownerName}&apos;s {expense.description} expense, {formatCurrency(expense.amountCents)}
+                      </span>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
       ))}

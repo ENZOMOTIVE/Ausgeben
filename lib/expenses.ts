@@ -1,18 +1,5 @@
 import type { Expense } from "@/types/expense";
 
-export const EXPENSE_STORAGE_KEY = "ausgeben:expenses:v1";
-export const STORAGE_VERSION = 1;
-
-type ExpenseStoragePayload = {
-  version: typeof STORAGE_VERSION;
-  expenses: Expense[];
-};
-
-export type StorageReadResult = {
-  expenses: Expense[];
-  error: string | null;
-};
-
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export function isValidDateString(value: string): boolean {
@@ -28,78 +15,12 @@ export function isValidDateString(value: string): boolean {
   );
 }
 
-function isExpense(value: unknown): value is Expense {
-  if (!value || typeof value !== "object") return false;
-
-  const expense = value as Partial<Expense>;
-
-  return (
-    typeof expense.id === "string" &&
-    expense.id.length > 0 &&
-    typeof expense.description === "string" &&
-    expense.description.trim().length > 0 &&
-    typeof expense.amountCents === "number" &&
-    Number.isSafeInteger(expense.amountCents) &&
-    expense.amountCents > 0 &&
-    typeof expense.date === "string" &&
-    isValidDateString(expense.date) &&
-    typeof expense.createdAt === "string" &&
-    !Number.isNaN(Date.parse(expense.createdAt))
-  );
-}
-
 export function sortExpenses(expenses: Expense[]): Expense[] {
   return [...expenses].sort((a, b) => {
     const dateDifference = b.date.localeCompare(a.date);
     if (dateDifference !== 0) return dateDifference;
     return b.createdAt.localeCompare(a.createdAt);
   });
-}
-
-export function readExpenses(storage: Pick<Storage, "getItem">): StorageReadResult {
-  try {
-    const rawValue = storage.getItem(EXPENSE_STORAGE_KEY);
-    if (!rawValue) return { expenses: [], error: null };
-
-    const payload = JSON.parse(rawValue) as Partial<ExpenseStoragePayload>;
-
-    if (
-      payload.version !== STORAGE_VERSION ||
-      !Array.isArray(payload.expenses)
-    ) {
-      return {
-        expenses: [],
-        error: "Your saved expenses use an unsupported format.",
-      };
-    }
-
-    const validExpenses = payload.expenses.filter(isExpense);
-
-    return {
-      expenses: sortExpenses(validExpenses),
-      error:
-        validExpenses.length === payload.expenses.length
-          ? null
-          : "One damaged expense could not be loaded.",
-    };
-  } catch {
-    return {
-      expenses: [],
-      error: "Your saved expenses could not be read on this device.",
-    };
-  }
-}
-
-export function writeExpenses(
-  storage: Pick<Storage, "setItem">,
-  expenses: Expense[],
-): void {
-  const payload: ExpenseStoragePayload = {
-    version: STORAGE_VERSION,
-    expenses: sortExpenses(expenses),
-  };
-
-  storage.setItem(EXPENSE_STORAGE_KEY, JSON.stringify(payload));
 }
 
 export function parseEuroAmount(value: string): number | null {
@@ -162,12 +83,6 @@ export function groupExpensesByDate(
 
 export function getMonthKey(date: string): string {
   return date.slice(0, 7);
-}
-
-export function shiftMonthKey(monthKey: string, offset: number): string {
-  const [year, month] = monthKey.split("-").map(Number);
-  const shifted = new Date(year, month - 1 + offset, 1, 12);
-  return `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(2, "0")}`;
 }
 
 export function getTodayInBerlin(now = new Date()): string {

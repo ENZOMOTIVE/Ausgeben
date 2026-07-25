@@ -10,19 +10,33 @@ type SpendingSummaryProps = {
   monthKey: string;
   monthExpenses: Expense[];
   todayExpenses: Expense[];
-  canGoForward: boolean;
-  onPreviousMonth: () => void;
-  onNextMonth: () => void;
+  isReady: boolean;
 };
 
 export function SpendingSummary({
   monthKey,
   monthExpenses,
   todayExpenses,
-  canGoForward,
-  onPreviousMonth,
-  onNextMonth,
+  isReady,
 }: SpendingSummaryProps) {
+  if (!isReady) {
+    return (
+      <section className="summary-grid summary-loading" aria-label="Loading spending summary" aria-busy="true">
+        <div className="month-card">
+          <span className="summary-placeholder summary-placeholder-short" />
+          <span className="summary-placeholder summary-placeholder-title" />
+          <span className="summary-placeholder summary-placeholder-total" />
+          <span className="summary-placeholder summary-placeholder-meta" />
+        </div>
+        <div className="today-card">
+          <span className="summary-placeholder summary-placeholder-short" />
+          <span className="summary-placeholder summary-placeholder-today" />
+          <span className="summary-placeholder summary-placeholder-meta" />
+        </div>
+      </section>
+    );
+  }
+
   const monthTotal = sumExpenses(monthExpenses);
   const todayTotal = sumExpenses(todayExpenses);
   const activeDays = new Set(monthExpenses.map((expense) => expense.date)).size;
@@ -33,17 +47,8 @@ export function SpendingSummary({
       <div className="month-card">
         <div className="month-card-glow" aria-hidden="true" />
         <div className="month-card-topline">
-          <p>Spent in</p>
-          <div className="month-navigation">
-            <button type="button" onClick={onPreviousMonth}>
-              <span aria-hidden="true">‹</span>
-              <span className="sr-only">Previous month</span>
-            </button>
-            <button type="button" onClick={onNextMonth} disabled={!canGoForward}>
-              <span aria-hidden="true">›</span>
-              <span className="sr-only">Next month</span>
-            </button>
-          </div>
+          <p>Spent together</p>
+          <span className="live-month"><span aria-hidden="true" /> Current month</span>
         </div>
         <h2>{formatMonth(monthKey)}</h2>
         <p className="month-total">{formatCurrency(monthTotal)}</p>
@@ -68,7 +73,7 @@ export function SpendingSummary({
         <div className="today-rule" aria-hidden="true" />
         <p className="today-note">
           {todayExpenses.length > 0
-            ? "You’re up to date."
+            ? "The shared ledger is up to date."
             : "Nothing logged today."}
         </p>
       </div>
