@@ -37,6 +37,23 @@ month, detailed history becomes a compact summary automatically.
 Ausgeben will appear with its own icon and open in a standalone, app-like
 window. It still needs an internet connection to read or save expenses.
 
+## Mobile previews
+
+<p align="center">
+  <img
+    src="./docs/media/ausgeben-iphone.png"
+    width="360"
+    alt="Ausgeben expense tracker preview on iPhone"
+  >
+  <img
+    src="./docs/media/ausgeben-android.png"
+    width="360"
+    alt="Ausgeben expense tracker preview on Android"
+  >
+</p>
+
+<p align="center"><sub>iPhone · Android · Example data</sub></p>
+
 ## What it does
 
 - Records a description, euro amount, and date in a phone-friendly form.
@@ -202,7 +219,7 @@ Ausgeben/
 │   └── types.ts                       # Cloudflare binding contracts
 ├── db/schema.ts                       # Drizzle D1 schema
 ├── drizzle/                           # Generated, versioned SQL migrations
-├── docs/media/ausgeben-demo.svg       # Animated README preview
+├── docs/media/                        # Animated and mobile README previews
 ├── public/                            # App icon and social preview
 ├── tests/                             # Production-render and architecture tests
 ├── .env.example                       # Non-secret configuration template
