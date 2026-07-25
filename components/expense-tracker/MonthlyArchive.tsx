@@ -15,7 +15,7 @@ export function MonthlyArchive({ summaries, isReady }: MonthlyArchiveProps) {
           <p className="eyebrow">Monthly archive</p>
           <h2 id="archive-title">Past months</h2>
         </div>
-        <p>One total stays when a month closes.</p>
+        <p>Each person’s total stays separate when a month closes.</p>
       </div>
 
       {!isReady ? (
@@ -28,7 +28,7 @@ export function MonthlyArchive({ summaries, isReady }: MonthlyArchiveProps) {
           <span className="archive-empty-mark" aria-hidden="true">↙</span>
           <div>
             <h3>No closed months yet</h3>
-            <p>Your first monthly total will appear here automatically.</p>
+            <p>Your first per-person monthly totals will appear here automatically.</p>
           </div>
         </div>
       ) : (
@@ -42,8 +42,16 @@ export function MonthlyArchive({ summaries, isReady }: MonthlyArchiveProps) {
                 <time dateTime={summary.monthKey}>{formatMonth(summary.monthKey)}</time>
                 <small>Closed month</small>
               </span>
-              <strong>{formatCurrency(summary.totalCents)}</strong>
-              <span className="sr-only">from {summary.expenseCount} expenses</span>
+              <span className="archive-person-totals">
+                <span>
+                  <small><i className="archive-person-dot aayushman" aria-hidden="true" />Aayushman</small>
+                  <strong>{formatCurrency(summary.aayushmanTotalCents)}</strong>
+                </span>
+                <span>
+                  <small><i className="archive-person-dot carlin" aria-hidden="true" />Carlin</small>
+                  <strong>{formatCurrency(summary.carlinTotalCents)}</strong>
+                </span>
+              </span>
             </li>
           ))}
         </ol>

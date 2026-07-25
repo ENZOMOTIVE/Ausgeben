@@ -57,74 +57,62 @@ export function ExpenseList({
 
   return (
     <div className="expense-groups">
-      {groups.map((group) => (
-        <section className="expense-day" key={group.date}>
-          <div className="day-heading">
-            <div>
-              <h3>{formatDayLabel(group.date, today)}</h3>
-              <p>{formatExpenseCount(group.expenses.length)}</p>
+      {groups.map((group) => {
+        return (
+          <section className="expense-day" key={group.date}>
+            <div className="day-heading">
+              <div className="day-heading-copy">
+                <h3>{formatDayLabel(group.date, today)}</h3>
+                <p>{formatExpenseCount(group.expenses.length)}</p>
+              </div>
+              <div className="day-person-totals" aria-label={`Your total for ${group.date}`}>
+                <span className={`day-person-total ${currentUserId}`}>
+                  <small>Your total</small>
+                  <strong>{formatCurrency(group.totalCents)}</strong>
+                </span>
+              </div>
             </div>
-            <p>{formatCurrency(group.totalCents)}</p>
-          </div>
 
-          <ul className="expense-list" aria-label={`Expenses for ${group.date}`}>
-            {group.expenses.map((expense, index) => {
-              const isOwnExpense = expense.createdBy === currentUserId;
-              const ownerName = USER_NAMES[expense.createdBy];
-              const content = (
-                <>
-                  <span
-                    className={`expense-marker expense-marker-${expense.createdBy}`}
-                    aria-hidden="true"
+            <ul className="expense-list" aria-label={`Your expenses for ${group.date}`}>
+              {group.expenses.map((expense, index) => {
+                const ownerName = USER_NAMES[currentUserId];
+
+                return (
+                  <li
+                    key={expense.id}
+                    className="expense-item own-expense"
+                    style={{ "--item-index": index } as CSSProperties}
                   >
-                    {ownerName.charAt(0)}
-                  </span>
-                  <span className="expense-copy">
-                    <strong>{expense.description}</strong>
-                    <small>
-                      <span>{ownerName}</span>
-                      <span aria-hidden="true">·</span>
-                      {isOwnExpense ? "Tap to edit" : "Shared entry"}
-                    </small>
-                  </span>
-                  <span className="expense-amount">
-                    {formatCurrency(expense.amountCents)}
-                  </span>
-                  {isOwnExpense ? (
-                    <span className="expense-arrow" aria-hidden="true">›</span>
-                  ) : (
-                    <span className="expense-shared-dot" aria-hidden="true" />
-                  )}
-                </>
-              );
-
-              return (
-                <li
-                  key={expense.id}
-                  className={isOwnExpense ? "expense-item own-expense" : "expense-item"}
-                  style={{ "--item-index": index } as CSSProperties}
-                >
-                  {isOwnExpense ? (
                     <button type="button" onClick={() => onEdit(expense)}>
-                      {content}
+                      <span
+                        className={`expense-marker expense-marker-${currentUserId}`}
+                        aria-hidden="true"
+                      >
+                        {ownerName.charAt(0)}
+                      </span>
+                      <span className="expense-copy">
+                        <strong>{expense.description}</strong>
+                        <small>
+                          <span>{ownerName}</span>
+                          <span aria-hidden="true">·</span>
+                          Tap to edit
+                        </small>
+                      </span>
+                      <span className="expense-amount">
+                        {formatCurrency(expense.amountCents)}
+                      </span>
+                      <span className="expense-arrow" aria-hidden="true">›</span>
                       <span className="sr-only">
                         Edit your {expense.description} expense, {formatCurrency(expense.amountCents)}
                       </span>
                     </button>
-                  ) : (
-                    <div className="expense-row">
-                      {content}
-                      <span className="sr-only">
-                        {ownerName}&apos;s {expense.description} expense, {formatCurrency(expense.amountCents)}
-                      </span>
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ))}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        );
+      })}
     </div>
   );
 }

@@ -24,8 +24,9 @@ test("server-renders the shared Ausgeben application shell", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>Ausgeben — Personal expense tracker<\/title>/i);
-  assert.match(html, /shared expense tracker for two people in Passau/i);
+  assert.match(html, /<title>Ausgeben — Shared expense tracker<\/title>/i);
+  assert.match(html, /shared expense tracker for two people in Germany/i);
+  assert.doesNotMatch(html, /Passau/i);
   assert.match(html, /Opening your shared ledger/i);
   assert.doesNotMatch(html, /No account|No database|codex-preview/i);
 });
@@ -59,6 +60,29 @@ test("protects ledger APIs before they reach persistence", async () => {
   assert.match(await crossOriginWrite.text(), /INVALID_ORIGIN/);
 });
 
+test("keeps itemized expenses private while sharing per-person totals", async () => {
+  const [api, database, clientTypes] = await Promise.all([
+    readFile(new URL("../worker/api.ts", import.meta.url), "utf8"),
+    readFile(new URL("../worker/database.ts", import.meta.url), "utf8"),
+    readFile(new URL("../types/expense.ts", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(database, /AND created_by = \?1/);
+  assert.match(database, /SELECT_CURRENT_EXPENSES_SQL\)\.bind\(user\)/);
+  assert.match(database, /SELECT_CURRENT_TOTALS_SQL/);
+
+  assert.match(api, /monthlySummaries: ledger\.archive\.map/);
+  assert.match(api, /todayTotals: ledger\.todayTotals/);
+  assert.match(api, /monthTotals: ledger\.monthTotals/);
+  assert.doesNotMatch(api, /todayTotalCents: ledger|monthTotalCents: ledger/);
+  assert.doesNotMatch(api, /totalCents: summary|expenseCount: summary/);
+
+  assert.match(clientTypes, /todayTotals: UserTotals/);
+  assert.match(clientTypes, /monthTotals: UserTotals/);
+  assert.doesNotMatch(clientTypes, /\n\s+totalCents: number/);
+  assert.doesNotMatch(clientTypes, /\n\s+expenseCount: number/);
+});
+
 test("uses shared D1 storage, hardened sessions, and monthly compaction", async () => {
   const [
     hook,
@@ -66,7 +90,10 @@ test("uses shared D1 storage, hardened sessions, and monthly compaction", async 
     api,
     auth,
     database,
-    migration,
+    initialMigration,
+    perPersonMigration,
+    summary,
+    archive,
     packageJson,
     hosting,
     envExample,
@@ -78,6 +105,18 @@ test("uses shared D1 storage, hardened sessions, and monthly compaction", async 
     readFile(new URL("../worker/database.ts", import.meta.url), "utf8"),
     readFile(
       new URL("../drizzle/0000_neat_ser_duncan.sql", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../drizzle/0001_first_morg.sql", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../components/expense-tracker/SpendingSummary.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../components/expense-tracker/MonthlyArchive.tsx", import.meta.url),
       "utf8",
     ),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
@@ -104,9 +143,19 @@ test("uses shared D1 storage, hardened sessions, and monthly compaction", async 
   assert.match(database, /Europe\/Berlin/);
   assert.match(database, /db\.batch/);
   assert.match(database, /monthly_summaries\.total_cents \+ excluded\.total_cents/);
+  assert.match(database, /aayushman_total_cents/);
+  assert.match(database, /carlin_total_cents/);
   assert.match(database, /DELETE FROM expenses/);
-  assert.match(migration, /CREATE TABLE `expenses`/);
-  assert.match(migration, /CREATE TABLE `monthly_summaries`/);
+  assert.match(initialMigration, /CREATE TABLE `expenses`/);
+  assert.match(initialMigration, /CREATE TABLE `monthly_summaries`/);
+  assert.match(perPersonMigration, /ADD COLUMN `aayushman_total_cents`/);
+  assert.match(perPersonMigration, /ADD COLUMN `carlin_total_cents`/);
+  assert.match(summary, /monthTotals/);
+  assert.match(summary, /todayTotals/);
+  assert.doesNotMatch(summary, /monthTotal\b|todayTotal\b|Spent together/);
+  assert.match(archive, /aayushmanTotalCents/);
+  assert.match(archive, /carlinTotalCents/);
+  assert.doesNotMatch(archive, /summary\.totalCents/);
 
   assert.match(packageJson, /drizzle-kit/);
   assert.deepEqual(JSON.parse(hosting), {

@@ -1,5 +1,7 @@
 export type UserId = "aayushman" | "carlin";
 
+export type UserTotals = Record<UserId, number>;
+
 export type ExpenseUser = {
   id: UserId;
   displayName: string;
@@ -21,13 +23,16 @@ export type ExpenseDraft = Pick<
 
 export type MonthlySummary = {
   monthKey: string;
-  totalCents: number;
-  expenseCount: number;
+  aayushmanTotalCents: number;
+  carlinTotalCents: number;
   archivedAt: string;
 };
 
 export type SharedLedger = {
   currentMonth: string;
+  today: string;
   expenses: Expense[];
   monthlySummaries: MonthlySummary[];
+  todayTotals: UserTotals;
+  monthTotals: UserTotals;
 };

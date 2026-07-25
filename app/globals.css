@@ -668,22 +668,76 @@ a:focus-visible {
   letter-spacing: 0.01em;
 }
 
-.month-total,
-.today-total,
 .expense-amount,
-.day-heading > p,
-.daily-average strong {
+.day-person-total strong,
+.person-total-copy strong,
+.archive-person-totals strong {
   font-variant-numeric: tabular-nums;
 }
 
-.month-total {
+.person-totals {
   position: relative;
   z-index: 1;
-  margin: 0;
-  font-size: clamp(42px, 12vw, 66px);
-  font-weight: 610;
-  letter-spacing: -0.065em;
+  display: grid;
+  gap: 9px;
+}
+
+.person-totals-month {
+  margin-top: 13px;
+}
+
+.person-total {
+  display: grid;
+  min-width: 0;
+  min-height: 64px;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.person-total-avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 790;
+}
+
+.person-total-avatar-aayushman {
+  background: var(--lime);
+  color: var(--evergreen);
+}
+
+.person-total-avatar-carlin {
+  background: #ffd8ce;
+  color: #873923;
+}
+
+.person-total-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.person-total-copy small {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 9px;
+  font-weight: 620;
+}
+
+.person-total-copy strong {
+  color: #fff;
+  font-size: clamp(20px, 6vw, 27px);
+  font-weight: 620;
+  letter-spacing: -0.045em;
   line-height: 1.05;
+  white-space: nowrap;
 }
 
 .month-meta {
@@ -695,35 +749,6 @@ a:focus-visible {
   margin-top: 8px;
   color: rgba(255, 255, 255, 0.58);
   font-size: 12px;
-}
-
-.daily-average {
-  position: absolute;
-  right: 22px;
-  bottom: 21px;
-  left: 22px;
-  z-index: 1;
-  display: flex;
-  min-height: 56px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 13px 15px;
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.07);
-  backdrop-filter: blur(12px);
-}
-
-.daily-average span {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 11px;
-}
-
-.daily-average strong {
-  flex: 0 0 auto;
-  color: var(--lime);
-  font-size: 14px;
 }
 
 .today-card {
@@ -762,30 +787,32 @@ a:focus-visible {
   box-shadow: 0 0 0 5px rgba(255, 136, 107, 0.12);
 }
 
-.today-total {
-  margin-top: 25px !important;
-  font-size: clamp(32px, 9vw, 48px);
-  font-weight: 620;
-  letter-spacing: -0.055em;
-  line-height: 1;
+.person-totals-today {
+  margin-top: 20px;
 }
 
-.today-total + p {
-  margin-top: 9px !important;
+.today-card .person-total {
+  min-height: 60px;
+  border-color: var(--border);
+  background: var(--surface-muted);
+}
+
+.today-card .person-total-copy small {
   color: var(--ink-soft);
-  font-size: 12px;
 }
 
-.today-rule {
-  width: 100%;
-  height: 1px;
-  margin: 26px 0 17px;
-  background: var(--border);
+.today-card .person-total-copy strong {
+  color: var(--ink);
+  font-size: clamp(19px, 5.8vw, 25px);
 }
 
 .today-note {
+  margin-top: 16px !important;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
   color: var(--ink-soft);
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 .summary-loading .month-card,
@@ -829,22 +856,10 @@ a:focus-visible {
   margin-top: 42px;
 }
 
-.summary-placeholder-total {
-  width: min(78%, 330px);
-  height: 58px;
-  margin-top: 10px;
-}
-
-.summary-placeholder-meta {
-  width: 150px;
-  height: 10px;
-  margin-top: 14px;
-}
-
-.summary-placeholder-today {
-  width: 150px;
-  height: 42px;
-  margin-top: 40px;
+.summary-placeholder-person {
+  width: 100%;
+  height: 62px;
+  margin-top: 9px;
 }
 
 .spending-log {
@@ -888,6 +903,7 @@ a:focus-visible {
 
 .day-heading {
   display: flex;
+  flex-wrap: wrap;
   min-height: 72px;
   align-items: center;
   justify-content: space-between;
@@ -908,15 +924,44 @@ a:focus-visible {
   letter-spacing: -0.02em;
 }
 
-.day-heading div p {
+.day-heading-copy p {
   margin-top: 3px;
   color: var(--ink-soft);
   font-size: 11px;
 }
 
-.day-heading > p {
-  font-size: 14px;
-  font-weight: 700;
+.day-person-totals {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: minmax(0, auto);
+  gap: 10px;
+  margin-left: auto;
+}
+
+.day-person-total {
+  display: grid;
+  gap: 2px;
+  text-align: right;
+}
+
+.day-person-total small {
+  color: var(--ink-soft);
+  font-size: 8px;
+  font-weight: 650;
+}
+
+.day-person-total.aayushman small {
+  color: var(--evergreen);
+}
+
+.day-person-total.carlin small {
+  color: #9b4a33;
+}
+
+.day-person-total strong {
+  font-size: 12px;
+  font-weight: 720;
+  white-space: nowrap;
 }
 
 .expense-list {
@@ -1171,8 +1216,8 @@ a:focus-visible {
 .archive-list li {
   --archive-index: 0;
   display: grid;
-  min-height: 76px;
-  grid-template-columns: 42px minmax(0, 1fr) auto;
+  min-height: 126px;
+  grid-template-columns: 42px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
@@ -1220,6 +1265,45 @@ a:focus-visible {
   font-size: 14px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.archive-person-totals {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.archive-person-totals > span {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  padding: 9px 10px;
+  border: 1px solid rgba(22, 51, 46, 0.07);
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+.archive-person-totals small {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink-soft);
+  font-size: 9px;
+}
+
+.archive-person-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.archive-person-dot.aayushman {
+  background: var(--evergreen);
+}
+
+.archive-person-dot.carlin {
+  background: var(--coral);
 }
 
 .archive-empty {
@@ -1637,14 +1721,8 @@ a:focus-visible {
     padding: 28px;
   }
 
-  .month-total {
-    font-size: 66px;
-  }
-
-  .daily-average {
-    right: 27px;
-    bottom: 25px;
-    left: 27px;
+  .person-totals-month {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .today-card {
@@ -1652,8 +1730,8 @@ a:focus-visible {
     flex-direction: column;
   }
 
-  .today-rule {
-    margin-top: auto;
+  .today-note {
+    margin-top: auto !important;
   }
 
   .spending-log {
@@ -1717,8 +1795,8 @@ a:focus-visible {
   }
 
   .archive-list li {
-    min-height: 82px;
-    grid-template-columns: 46px minmax(0, 1fr) auto;
+    min-height: 94px;
+    grid-template-columns: 46px minmax(120px, 1fr) minmax(270px, auto);
     gap: 14px;
     padding-right: 22px;
     padding-left: 22px;
@@ -1727,6 +1805,11 @@ a:focus-visible {
   .archive-month-mark {
     width: 46px;
     height: 46px;
+  }
+
+  .archive-person-totals {
+    grid-column: auto;
+    min-width: 270px;
   }
 
   .archive-month-copy time,

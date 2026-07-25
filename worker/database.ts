@@ -23,9 +23,13 @@ export type ExpenseRecord = {
 export type MonthlySummary = {
   monthKey: string;
   totalCents: number;
+  aayushmanTotalCents: number;
+  carlinTotalCents: number;
   expenseCount: number;
   archivedAt: string;
 };
+
+export type UserTotals = Record<AppUserId, number>;
 
 export type LedgerResult = {
   currentUser: AppUserId;
@@ -33,8 +37,8 @@ export type LedgerResult = {
   currentMonth: string;
   expenses: ExpenseRecord[];
   archive: MonthlySummary[];
-  todayTotalCents: number;
-  monthTotalCents: number;
+  todayTotals: UserTotals;
+  monthTotals: UserTotals;
 };
 
 export type BerlinClock = {
@@ -74,6 +78,13 @@ type CanonicalMonthRow = {
   currentMonth: string;
 };
 
+type CurrentTotalsRow = {
+  aayushmanMonthTotalCents: number;
+  carlinMonthTotalCents: number;
+  aayushmanTodayTotalCents: number;
+  carlinTodayTotalCents: number;
+};
+
 const MAX_AMOUNT_CENTS = 999_999_999;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
@@ -109,9 +120,15 @@ const CREATE_MONTHLY_SUMMARIES_SQL = `
   CREATE TABLE IF NOT EXISTS monthly_summaries (
     month_key TEXT PRIMARY KEY NOT NULL,
     total_cents INTEGER NOT NULL,
+    aayushman_total_cents INTEGER NOT NULL DEFAULT 0,
+    carlin_total_cents INTEGER NOT NULL DEFAULT 0,
     expense_count INTEGER NOT NULL,
     archived_at TEXT NOT NULL,
     CONSTRAINT monthly_total_nonnegative CHECK (total_cents >= 0),
+    CONSTRAINT monthly_aayushman_total_nonnegative
+      CHECK (aayushman_total_cents >= 0),
+    CONSTRAINT monthly_carlin_total_nonnegative
+      CHECK (carlin_total_cents >= 0),
     CONSTRAINT monthly_count_nonnegative CHECK (expense_count >= 0)
   )
 `;
@@ -150,12 +167,16 @@ const ARCHIVE_OLD_EXPENSES_SQL = `
   INSERT INTO monthly_summaries (
     month_key,
     total_cents,
+    aayushman_total_cents,
+    carlin_total_cents,
     expense_count,
     archived_at
   )
   SELECT
     month_key,
     sum(amount_cents),
+    sum(CASE WHEN created_by = 'aayushman' THEN amount_cents ELSE 0 END),
+    sum(CASE WHEN created_by = 'carlin' THEN amount_cents ELSE 0 END),
     count(*),
     ?1
   FROM expenses
@@ -165,6 +186,12 @@ const ARCHIVE_OLD_EXPENSES_SQL = `
   GROUP BY month_key
   ON CONFLICT (month_key) DO UPDATE SET
     total_cents = monthly_summaries.total_cents + excluded.total_cents,
+    aayushman_total_cents =
+      monthly_summaries.aayushman_total_cents
+      + excluded.aayushman_total_cents,
+    carlin_total_cents =
+      monthly_summaries.carlin_total_cents
+      + excluded.carlin_total_cents,
     expense_count = monthly_summaries.expense_count + excluded.expense_count,
     archived_at = excluded.archived_at
 `;
@@ -196,13 +223,42 @@ const SELECT_CURRENT_EXPENSES_SQL = `
   WHERE month_key = (
     SELECT current_month FROM ledger_state WHERE singleton = 1
   )
+    AND created_by = ?1
   ORDER BY date DESC, created_at DESC
+`;
+
+const SELECT_CURRENT_TOTALS_SQL = `
+  SELECT
+    coalesce(sum(
+      CASE WHEN created_by = 'aayushman' THEN amount_cents ELSE 0 END
+    ), 0) AS aayushmanMonthTotalCents,
+    coalesce(sum(
+      CASE WHEN created_by = 'carlin' THEN amount_cents ELSE 0 END
+    ), 0) AS carlinMonthTotalCents,
+    coalesce(sum(
+      CASE
+        WHEN created_by = 'aayushman' AND date = ?1 THEN amount_cents
+        ELSE 0
+      END
+    ), 0) AS aayushmanTodayTotalCents,
+    coalesce(sum(
+      CASE
+        WHEN created_by = 'carlin' AND date = ?1 THEN amount_cents
+        ELSE 0
+      END
+    ), 0) AS carlinTodayTotalCents
+  FROM expenses
+  WHERE month_key = (
+    SELECT current_month FROM ledger_state WHERE singleton = 1
+  )
 `;
 
 const SELECT_ARCHIVE_SQL = `
   SELECT
     month_key AS monthKey,
     total_cents AS totalCents,
+    aayushman_total_cents AS aayushmanTotalCents,
+    carlin_total_cents AS carlinTotalCents,
     expense_count AS expenseCount,
     archived_at AS archivedAt
   FROM monthly_summaries
@@ -354,6 +410,76 @@ function isSameExpense(
   );
 }
 
+async function monthlySummaryColumnExists(
+  db: WorkerD1Database,
+  columnName: string,
+): Promise<boolean> {
+  const row = await db
+    .prepare(
+      `
+        SELECT 1 AS present
+        FROM pragma_table_info('monthly_summaries')
+        WHERE name = ?1
+      `,
+    )
+    .bind(columnName)
+    .first<{ present: number }>();
+
+  return row?.present === 1;
+}
+
+async function ensureMonthlySummaryColumn(
+  db: WorkerD1Database,
+  columnName: string,
+  alterSql: string,
+): Promise<void> {
+  if (await monthlySummaryColumnExists(db, columnName)) return;
+
+  try {
+    await db.prepare(alterSql).run();
+  } catch (error) {
+    // Another Worker isolate may have completed the same upgrade after our
+    // metadata read. Rechecking makes the upgrade safe to retry in that race.
+    if (await monthlySummaryColumnExists(db, columnName)) return;
+    throw error;
+  }
+}
+
+async function initializeSchema(db: WorkerD1Database): Promise<void> {
+  await db.batch([
+    db.prepare(CREATE_EXPENSES_SQL),
+    db.prepare(CREATE_MONTHLY_SUMMARIES_SQL),
+    db.prepare(CREATE_LEDGER_STATE_SQL),
+    db.prepare(CREATE_LOGIN_ATTEMPTS_SQL),
+    db.prepare(
+      "CREATE INDEX IF NOT EXISTS expenses_month_date_idx ON expenses (month_key, date, created_at)",
+    ),
+  ]);
+
+  await ensureMonthlySummaryColumn(
+    db,
+    "aayushman_total_cents",
+    `
+      ALTER TABLE monthly_summaries
+      ADD COLUMN aayushman_total_cents INTEGER NOT NULL DEFAULT 0
+      CONSTRAINT monthly_aayushman_total_nonnegative CHECK (
+        aayushman_total_cents >= 0
+      )
+    `,
+  );
+  await ensureMonthlySummaryColumn(
+    db,
+    "carlin_total_cents",
+    `
+      ALTER TABLE monthly_summaries
+      ADD COLUMN carlin_total_cents INTEGER NOT NULL DEFAULT 0
+      CONSTRAINT monthly_carlin_total_nonnegative CHECK (
+        carlin_total_cents >= 0
+      )
+    `,
+  );
+}
+
 export function getBerlinClock(now = new Date()): BerlinClock {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Berlin",
@@ -377,17 +503,7 @@ export function ensureSchema(db: WorkerD1Database): Promise<void> {
   const pendingSchema = schemaPromises.get(db);
   if (pendingSchema) return pendingSchema;
 
-  const schemaPromise = db
-    .batch([
-      db.prepare(CREATE_EXPENSES_SQL),
-      db.prepare(CREATE_MONTHLY_SUMMARIES_SQL),
-      db.prepare(CREATE_LEDGER_STATE_SQL),
-      db.prepare(CREATE_LOGIN_ATTEMPTS_SQL),
-      db.prepare(
-        "CREATE INDEX IF NOT EXISTS expenses_month_date_idx ON expenses (month_key, date, created_at)",
-      ),
-    ])
-    .then(() => undefined)
+  const schemaPromise = initializeSchema(db)
     .catch((error: unknown) => {
       schemaPromises.delete(db);
       throw error;
@@ -408,7 +524,8 @@ export async function getLedger(
   const results = (await db.batch([
     ...rolloverStatements(db, clock),
     db.prepare(SELECT_CANONICAL_MONTH_SQL),
-    db.prepare(SELECT_CURRENT_EXPENSES_SQL),
+    db.prepare(SELECT_CURRENT_EXPENSES_SQL).bind(user),
+    db.prepare(SELECT_CURRENT_TOTALS_SQL).bind(clock.today),
     db.prepare(SELECT_ARCHIVE_SQL),
   ])) as unknown as D1BatchResult[];
 
@@ -418,7 +535,12 @@ export async function getLedger(
   }
 
   const expenses = rows<ExpenseRecord>(results[4]);
-  const archive = rows<MonthlySummary>(results[5]);
+  const totals = rows<CurrentTotalsRow>(results[5])[0];
+  const archive = rows<MonthlySummary>(results[6]);
+
+  if (!totals) {
+    throw new Error("The ledger totals could not be calculated.");
+  }
 
   return {
     currentUser: user,
@@ -426,13 +548,14 @@ export async function getLedger(
     currentMonth,
     expenses,
     archive,
-    todayTotalCents: expenses
-      .filter((expense) => expense.date === clock.today)
-      .reduce((sum, expense) => sum + expense.amountCents, 0),
-    monthTotalCents: expenses.reduce(
-      (sum, expense) => sum + expense.amountCents,
-      0,
-    ),
+    todayTotals: {
+      aayushman: totals.aayushmanTodayTotalCents,
+      carlin: totals.carlinTodayTotalCents,
+    },
+    monthTotals: {
+      aayushman: totals.aayushmanMonthTotalCents,
+      carlin: totals.carlinMonthTotalCents,
+    },
   };
 }
 

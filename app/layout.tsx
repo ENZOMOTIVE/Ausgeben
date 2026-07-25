@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const title = "Ausgeben — Personal expense tracker";
+const title = "Ausgeben — Shared expense tracker";
 const description =
-  "A private, shared expense tracker for two people in Passau, Germany.";
+  "A private, shared expense tracker for two people in Germany.";
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
@@ -65,9 +65,9 @@ export async function generateMetadata(): Promise<Metadata> {
       images: [
         {
           url: socialImage,
-          width: 1200,
-          height: 630,
-          alt: "Ausgeben — Your spending, made clear.",
+          width: 1732,
+          height: 909,
+          alt: "Ausgeben — Our spending, kept separate and clear.",
         },
       ],
     },

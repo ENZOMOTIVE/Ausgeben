@@ -1,65 +1,100 @@
-import { sumExpenses } from "@/lib/expenses";
 import {
   formatCurrency,
   formatExpenseCount,
   formatMonth,
 } from "@/lib/formatters";
-import type { Expense } from "@/types/expense";
+import type { Expense, UserId, UserTotals } from "@/types/expense";
 
 type SpendingSummaryProps = {
   monthKey: string;
   monthExpenses: Expense[];
-  todayExpenses: Expense[];
+  monthTotals?: UserTotals;
+  todayTotals?: UserTotals;
+  currentUserId: UserId;
   isReady: boolean;
 };
+
+type PersonTotalProps = {
+  name: "Aayushman" | "Carlin";
+  userId: UserId;
+  amountCents: number;
+  isCurrentUser: boolean;
+};
+
+function PersonTotal({
+  name,
+  userId,
+  amountCents,
+  isCurrentUser,
+}: PersonTotalProps) {
+  return (
+    <div className="person-total">
+      <span className={`person-total-avatar person-total-avatar-${userId}`} aria-hidden="true">
+        {name.charAt(0)}
+      </span>
+      <span className="person-total-copy">
+        <small>{name}{isCurrentUser ? " · you" : ""}</small>
+        <strong>{formatCurrency(amountCents)}</strong>
+      </span>
+    </div>
+  );
+}
 
 export function SpendingSummary({
   monthKey,
   monthExpenses,
-  todayExpenses,
+  monthTotals,
+  todayTotals,
+  currentUserId,
   isReady,
 }: SpendingSummaryProps) {
-  if (!isReady) {
+  if (!isReady || !monthTotals || !todayTotals) {
     return (
       <section className="summary-grid summary-loading" aria-label="Loading spending summary" aria-busy="true">
         <div className="month-card">
           <span className="summary-placeholder summary-placeholder-short" />
           <span className="summary-placeholder summary-placeholder-title" />
-          <span className="summary-placeholder summary-placeholder-total" />
-          <span className="summary-placeholder summary-placeholder-meta" />
+          <span className="summary-placeholder summary-placeholder-person" />
+          <span className="summary-placeholder summary-placeholder-person" />
         </div>
         <div className="today-card">
           <span className="summary-placeholder summary-placeholder-short" />
-          <span className="summary-placeholder summary-placeholder-today" />
-          <span className="summary-placeholder summary-placeholder-meta" />
+          <span className="summary-placeholder summary-placeholder-person" />
+          <span className="summary-placeholder summary-placeholder-person" />
         </div>
       </section>
     );
   }
 
-  const monthTotal = sumExpenses(monthExpenses);
-  const todayTotal = sumExpenses(todayExpenses);
   const activeDays = new Set(monthExpenses.map((expense) => expense.date)).size;
-  const averagePerActiveDay = activeDays > 0 ? Math.round(monthTotal / activeDays) : 0;
 
   return (
-    <section className="summary-grid" aria-label="Spending summary">
+    <section className="summary-grid" aria-label="Spending totals separated by person">
       <div className="month-card">
         <div className="month-card-glow" aria-hidden="true" />
         <div className="month-card-topline">
-          <p>Spent together</p>
-          <span className="live-month"><span aria-hidden="true" /> Current month</span>
+          <p>This month</p>
+          <span className="live-month"><span aria-hidden="true" /> Current</span>
         </div>
         <h2>{formatMonth(monthKey)}</h2>
-        <p className="month-total">{formatCurrency(monthTotal)}</p>
-        <div className="month-meta">
-          <span>{formatExpenseCount(monthExpenses.length)}</span>
-          <span aria-hidden="true">·</span>
-          <span>{activeDays} {activeDays === 1 ? "day" : "days"} tracked</span>
+        <div className="person-totals person-totals-month">
+          <PersonTotal
+            name="Aayushman"
+            userId="aayushman"
+            amountCents={monthTotals.aayushman}
+            isCurrentUser={currentUserId === "aayushman"}
+          />
+          <PersonTotal
+            name="Carlin"
+            userId="carlin"
+            amountCents={monthTotals.carlin}
+            isCurrentUser={currentUserId === "carlin"}
+          />
         </div>
-        <div className="daily-average">
-          <span>Average per active day</span>
-          <strong>{formatCurrency(averagePerActiveDay)}</strong>
+        <div className="month-meta">
+          <span>Your {formatExpenseCount(monthExpenses.length)}</span>
+          <span aria-hidden="true">·</span>
+          <span>{activeDays} of your {activeDays === 1 ? "day" : "days"} tracked</span>
         </div>
       </div>
 
@@ -68,13 +103,22 @@ export function SpendingSummary({
           <span className="today-dot" aria-hidden="true" />
           <p>Today</p>
         </div>
-        <p className="today-total">{formatCurrency(todayTotal)}</p>
-        <p>{formatExpenseCount(todayExpenses.length)} recorded</p>
-        <div className="today-rule" aria-hidden="true" />
+        <div className="person-totals person-totals-today">
+          <PersonTotal
+            name="Aayushman"
+            userId="aayushman"
+            amountCents={todayTotals.aayushman}
+            isCurrentUser={currentUserId === "aayushman"}
+          />
+          <PersonTotal
+            name="Carlin"
+            userId="carlin"
+            amountCents={todayTotals.carlin}
+            isCurrentUser={currentUserId === "carlin"}
+          />
+        </div>
         <p className="today-note">
-          {todayExpenses.length > 0
-            ? "The shared ledger is up to date."
-            : "Nothing logged today."}
+          Only your entries are itemized below.
         </p>
       </div>
     </section>

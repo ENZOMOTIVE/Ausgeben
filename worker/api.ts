@@ -184,9 +184,14 @@ async function handleLedger(request: Request, env: WorkerEnv): Promise<Response>
     currentMonth: ledger.currentMonth,
     today: ledger.today,
     expenses: ledger.expenses,
-    monthlySummaries: ledger.archive,
-    todayTotalCents: ledger.todayTotalCents,
-    monthTotalCents: ledger.monthTotalCents,
+    monthlySummaries: ledger.archive.map((summary) => ({
+      monthKey: summary.monthKey,
+      aayushmanTotalCents: summary.aayushmanTotalCents,
+      carlinTotalCents: summary.carlinTotalCents,
+      archivedAt: summary.archivedAt,
+    })),
+    todayTotals: ledger.todayTotals,
+    monthTotals: ledger.monthTotals,
   });
 }
 

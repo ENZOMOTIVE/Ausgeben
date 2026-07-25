@@ -76,10 +76,6 @@ export function ExpenseTracker({ initialToday }: ExpenseTrackerProps) {
 
   const currentMonthKey = ledger?.currentMonth ?? getMonthKey(today);
   const expenses = useMemo(() => ledger?.expenses ?? [], [ledger?.expenses]);
-  const todayExpenses = useMemo(
-    () => expenses.filter((expense) => expense.date === today),
-    [expenses, today],
-  );
   const archivedMonths = useMemo(
     () => (ledger?.monthlySummaries ?? []).filter(
       (summary) => summary.monthKey < currentMonthKey,
@@ -133,10 +129,10 @@ export function ExpenseTracker({ initialToday }: ExpenseTrackerProps) {
     try {
       if (editingExpense) {
         await updateExpense(editingExpense.id, draft);
-        setStatusMessage("Expense updated for both of you");
+        setStatusMessage("Expense updated");
       } else {
         await addExpense(draft);
-        setStatusMessage("Expense added to the shared ledger");
+        setStatusMessage("Expense added to your log");
       }
       closeForm();
       return true;
@@ -193,7 +189,7 @@ export function ExpenseTracker({ initialToday }: ExpenseTrackerProps) {
 
       <div className="page-intro" id="top">
         <div>
-          <p className="eyebrow location-label">Passau, Germany</p>
+          <p className="eyebrow location-label">Germany · Shared ledger</p>
           <h1>Our spending,<br />made clear.</h1>
         </div>
         <button
@@ -224,15 +220,17 @@ export function ExpenseTracker({ initialToday }: ExpenseTrackerProps) {
       <SpendingSummary
         monthKey={currentMonthKey}
         monthExpenses={expenses}
-        todayExpenses={todayExpenses}
+        monthTotals={ledger?.monthTotals}
+        todayTotals={ledger?.todayTotals}
+        currentUserId={user.id}
         isReady={Boolean(ledger)}
       />
 
       <section className="spending-log" aria-labelledby="spending-log-title">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Current details</p>
-            <h2 id="spending-log-title">Spending log</h2>
+            <p className="eyebrow">Your details</p>
+            <h2 id="spending-log-title">Your spending log</h2>
           </div>
           <p>{formatMonth(currentMonthKey)}</p>
         </div>

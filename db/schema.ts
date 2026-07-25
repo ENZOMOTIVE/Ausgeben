@@ -42,11 +42,23 @@ export const monthlySummaries = sqliteTable(
   {
     monthKey: text("month_key").primaryKey(),
     totalCents: integer("total_cents").notNull(),
+    aayushmanTotalCents: integer("aayushman_total_cents")
+      .notNull()
+      .default(0),
+    carlinTotalCents: integer("carlin_total_cents").notNull().default(0),
     expenseCount: integer("expense_count").notNull(),
     archivedAt: text("archived_at").notNull(),
   },
   (table) => [
     check("monthly_total_nonnegative", sql`${table.totalCents} >= 0`),
+    check(
+      "monthly_aayushman_total_nonnegative",
+      sql`${table.aayushmanTotalCents} >= 0`,
+    ),
+    check(
+      "monthly_carlin_total_nonnegative",
+      sql`${table.carlinTotalCents} >= 0`,
+    ),
     check("monthly_count_nonnegative", sql`${table.expenseCount} >= 0`),
   ],
 );

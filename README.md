@@ -3,7 +3,7 @@
 
   # Ausgeben
 
-  **A private, phone-first shared expense tracker for Passau, Germany.**
+  **A private, phone-first shared expense tracker for two people in Germany.**
 
   <p>
     <img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16.2-111111?logo=nextdotjs">
@@ -17,19 +17,23 @@
   <img
     src="./docs/media/ausgeben-demo.svg"
     width="900"
-    alt="Animated preview of adding an expense and updating the monthly total in Ausgeben"
+    alt="Animated preview of adding an expense and updating Carlin's total while Aayushman's stays separate"
   >
 </p>
 
-Ausgeben gives **Aayushman** and **Carlin** one shared ledger that stays in
-sync across signed-in devices. It keeps the active month detailed and turns
-each closed month into one compact total.
+Ausgeben gives **Aayushman** and **Carlin** one ledger that stays in sync
+across signed-in devices. Each person keeps their own itemized log, can see
+the other person's total, and gets one compact pair of totals for every closed
+month.
 
 ## What it does
 
 - Records a description, euro amount, and date in a phone-friendly form.
-- Shows the shared total for today and the current month.
-- Attributes each entry to its creator; only that person can edit or delete it.
+- Shows Aayushman’s and Carlin’s spending separately for today and the current
+  month; it never presents a combined euro total.
+- Shows itemized entries only to their creator; the other person sees the total
+  amount, not descriptions or individual purchases.
+- Lets only an entry's creator edit or delete it.
 - Refreshes when the app regains focus so changes from another device appear.
 - Stores authoritative data in Cloudflare D1 instead of browser storage.
 - Formats money with `de-DE` rules and keeps amounts as integer cents.
@@ -39,24 +43,26 @@ in this repository or documented here.
 
 ## Monthly lifecycle
 
-The server determines the date in `Europe/Berlin`. New and edited entries must
-belong to the current Berlin month and cannot be dated in the future. Once a
-month closes, its details can no longer be added to or changed.
+The server uses Germany’s calendar date. New and edited entries must belong to
+the current German month and cannot be dated in the future. Once a month
+closes, its details can no longer be added to or changed.
 
 On the first ledger read or mutation in a new month, one atomic D1 batch:
 
 1. advances the canonical month without allowing it to move backwards;
-2. adds every older month's amount and entry count to its summary; and
+2. adds every older month’s Aayushman amount, Carlin amount, and entry count to
+   its summary; and
 3. deletes the corresponding detailed expense rows.
 
-The archive then exposes one non-editable row such as **July — 423,18 €**.
+The archive then exposes one non-editable row such as
+**July — Aayushman 198,10 € · Carlin 225,08 €**.
 The additive upsert and deletion happen in the same transaction, so retries and
 concurrent requests cannot double-count a month.
 
 ```mermaid
 flowchart LR
-    A[Current-month details] -->|Berlin month changes| B[Atomic D1 rollover]
-    B --> C[Month — EUR total]
+    A[Current-month details] -->|German month changes| B[Atomic D1 rollover]
+    B --> C[Month — separate Aayushman and Carlin totals]
     B --> D[Old detail rows deleted]
 ```
 
@@ -72,8 +78,8 @@ flowchart LR
   is HMAC-derived rather than a raw IP address.
 - State-changing API calls require same-origin JSON, Fetch Metadata checks, and
   an application request header. API responses are marked `no-store`.
-- Authorization is enforced in the Worker: both accounts can read the ledger,
-  while only an expense's creator can modify it.
+- Authorization is enforced in the Worker: each account receives only its own
+  itemized entries, while only an expense's creator can modify it.
 
 ## Technology
 
@@ -130,7 +136,7 @@ initialization for a fresh local database.
 | `POST` | `/api/auth/login` | Verify one of the two accounts and set a session cookie |
 | `GET` | `/api/auth/session` | Return the signed-in account |
 | `POST` | `/api/auth/logout` | Expire the session cookie |
-| `GET` | `/api/ledger` | Return current details, totals, and monthly summaries |
+| `GET` | `/api/ledger` | Return the caller's details, per-person totals, and monthly summaries |
 | `POST` | `/api/expenses` | Add a current-month expense |
 | `PATCH` | `/api/expenses/:id` | Update an expense created by the signed-in account |
 | `DELETE` | `/api/expenses/:id` | Delete an expense created by the signed-in account |
@@ -159,8 +165,8 @@ Ausgeben/
 │   ├── LoginScreen.tsx               # Two-account sign-in screen
 │   ├── ExpenseForm.tsx               # Add/edit bottom sheet
 │   ├── ExpenseList.tsx               # Current-month detailed entries
-│   ├── SpendingSummary.tsx           # Today and current-month totals
-│   └── MonthlyArchive.tsx            # One total per closed month
+│   ├── SpendingSummary.tsx           # Separate today and current-month totals
+│   └── MonthlyArchive.tsx            # Separate totals per closed month
 ├── hooks/use-shared-ledger.ts         # Session, API, refresh, and mutation state
 ├── lib/                               # Validation, sorting, and EUR/date formatting
 ├── types/expense.ts                   # Client domain and API types
@@ -183,11 +189,13 @@ Ausgeben/
 
 - Expense descriptions, amounts, dates, creator IDs, monthly summaries, and
   rate-limit counters are stored in the configured Cloudflare D1 database.
-- Both accounts can see every current-month entry and every archived total.
+- Each account can see only its own current-month entries. Both accounts see
+  Aayushman’s and Carlin’s separate totals.
 - Closed-month details are deleted from the active database and are not
-  available through the application; the summary total and count remain.
-- There is no per-user ledger, category system, budget, export, receipt upload,
-  offline write queue, or conflict-resolution interface.
+  available through the application; only the two per-person summary totals
+  are exposed.
+- There is no category system, budget, export, receipt upload, offline write
+  queue, or conflict-resolution interface.
 - A network connection is required to read or change the ledger.
 - Anyone with an account's credentials can access the shared data, so hosted
   secrets and devices with active sessions must be protected.
