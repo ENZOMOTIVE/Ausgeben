@@ -24,7 +24,6 @@ export function LoginScreen({
   const passwordRef = useRef<HTMLInputElement>(null);
   const [selectedUser, setSelectedUser] = useState<UserId>("aayushman");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
 
   const selectedName = ACCOUNTS.find((account) => account.id === selectedUser)?.name;
 
@@ -41,9 +40,6 @@ export function LoginScreen({
 
   return (
     <main className="login-shell">
-      <div className="login-orb login-orb-one" aria-hidden="true" />
-      <div className="login-orb login-orb-two" aria-hidden="true" />
-
       <section className="login-card" aria-labelledby="login-title">
         <div className="login-brand">
           <span className="brand-mark" aria-hidden="true">a.</span>
@@ -54,9 +50,8 @@ export function LoginScreen({
         </div>
 
         <div className="login-heading">
-          <p className="eyebrow">Passau, Germany</p>
-          <h1 id="login-title">Welcome back.</h1>
-          <p>Choose your account to open the shared ledger.</p>
+          <h1 id="login-title">Sign in</h1>
+          <p>Choose your name and enter your password.</p>
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
@@ -88,32 +83,24 @@ export function LoginScreen({
 
           <div className="login-password-group">
             <label htmlFor="account-password">Password</label>
-            <div className="password-input-wrap">
-              <input
-                ref={passwordRef}
-                id="account-password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                autoComplete="current-password"
-                autoCapitalize="none"
-                spellCheck={false}
-                placeholder={`Password for ${selectedName}`}
-                value={password}
-                onChange={(event) => {
-                  setPassword(event.target.value);
-                  if (error) onDismissError();
-                }}
-                aria-invalid={Boolean(error)}
-                aria-describedby={error ? "login-error" : undefined}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((current) => !current)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? "Hide" : "Show"}
-              </button>
-            </div>
+            <input
+              ref={passwordRef}
+              className="login-password-input"
+              id="account-password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              autoCapitalize="none"
+              spellCheck={false}
+              placeholder={`Password for ${selectedName}`}
+              value={password}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                if (error) onDismissError();
+              }}
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? "login-error" : undefined}
+            />
             {error ? (
               <p className="login-error" id="login-error" role="alert">
                 <span aria-hidden="true">!</span>
@@ -132,14 +119,9 @@ export function LoginScreen({
             ) : (
               <span aria-hidden="true">→</span>
             )}
-            {isSubmitting ? "Signing in…" : `Continue as ${selectedName}`}
+            {isSubmitting ? "Signing in…" : "Log in"}
           </button>
         </form>
-
-        <p className="login-note">
-          <span aria-hidden="true" />
-          Private and shared between just the two of you.
-        </p>
       </section>
     </main>
   );

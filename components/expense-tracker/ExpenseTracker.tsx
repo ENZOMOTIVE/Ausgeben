@@ -15,39 +15,32 @@ type ExpenseTrackerProps = {
   initialToday: string;
 };
 
-type AccountMenuProps = {
+type AccountControlsProps = {
   user: ExpenseUser;
   isLoggingOut: boolean;
   onLogout: () => Promise<boolean>;
 };
 
-function AccountMenu({ user, isLoggingOut, onLogout }: AccountMenuProps) {
+function AccountControls({
+  user,
+  isLoggingOut,
+  onLogout,
+}: AccountControlsProps) {
   return (
-    <details className="account-menu">
-      <summary aria-label={`Signed in as ${user.displayName}. Open account menu.`}>
-        <span className={`header-avatar header-avatar-${user.id}`} aria-hidden="true">
-          {user.displayName.charAt(0)}
-        </span>
-        <span className="header-user-name">{user.displayName}</span>
-        <span className="account-menu-chevron" aria-hidden="true">⌄</span>
-      </summary>
-      <div className="account-popover">
-        <div>
-          <span className="sync-dot" aria-hidden="true" />
-          <p>
-            <small>Signed in as</small>
-            <strong>{user.displayName}</strong>
-          </p>
-        </div>
-        <button
-          type="button"
-          disabled={isLoggingOut}
-          onClick={() => void onLogout()}
-        >
-          {isLoggingOut ? "Logging out…" : "Log out"}
-        </button>
-      </div>
-    </details>
+    <div className="account-controls">
+      <span className={`header-avatar header-avatar-${user.id}`} aria-hidden="true">
+        {user.displayName.charAt(0)}
+      </span>
+      <span className="header-user-name">{user.displayName}</span>
+      <button
+        className="logout-button"
+        type="button"
+        disabled={isLoggingOut}
+        onClick={() => void onLogout()}
+      >
+        {isLoggingOut ? "Logging out…" : "Log out"}
+      </button>
+    </div>
   );
 }
 
@@ -191,7 +184,11 @@ export function ExpenseTracker({ initialToday }: ExpenseTrackerProps) {
             <small>Shared expenses</small>
           </span>
         </a>
-        <AccountMenu user={user} isLoggingOut={isLoggingOut} onLogout={logout} />
+        <AccountControls
+          user={user}
+          isLoggingOut={isLoggingOut}
+          onLogout={logout}
+        />
       </header>
 
       <div className="page-intro" id="top">
