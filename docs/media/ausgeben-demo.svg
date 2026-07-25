@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
+  <title id="title">Animated Ausgeben expense tracker preview</title>
+  <desc id="description">An expense is added and the monthly total updates in a stylized mobile dashboard.</desc>
+  <style>
+    .copy { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .mono { font-variant-numeric: tabular-nums; }
+    .new-row { animation: row-in 5.5s ease-in-out infinite; transform-origin: center; }
+    .old-total { animation: total-out 5.5s ease-in-out infinite; }
+    .new-total { animation: total-in 5.5s ease-in-out infinite; }
+    .tap { animation: tap 5.5s ease-in-out infinite; transform-origin: 1037px 515px; }
+    .pulse { animation: pulse 5.5s ease-in-out infinite; transform-origin: center; }
+    @keyframes row-in {
+      0%, 24% { opacity: 0; transform: translateY(18px); }
+      36%, 84% { opacity: 1; transform: translateY(0); }
+      96%, 100% { opacity: 0; transform: translateY(-5px); }
+    }
+    @keyframes total-out {
+      0%, 26% { opacity: 1; transform: translateY(0); }
+      34%, 94% { opacity: 0; transform: translateY(-9px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes total-in {
+      0%, 27% { opacity: 0; transform: translateY(10px); }
+      36%, 91% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-8px); }
+    }
+    @keyframes tap {
+      0%, 11%, 100% { transform: scale(1); }
+      15% { transform: scale(.94); }
+      20% { transform: scale(1); }
+    }
+    @keyframes pulse {
+      0%, 22%, 100% { opacity: .18; transform: scale(.82); }
+      30%, 42% { opacity: .5; transform: scale(1.12); }
+      52%, 94% { opacity: .18; transform: scale(.82); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
+      .old-total { opacity: 0; }
+      .new-total, .new-row { opacity: 1; }
+    }
+  </style>
+  <rect width="1200" height="630" rx="34" fill="#f2efe7"/>
+  <circle cx="107" cy="102" r="31" fill="#0d3f37"/>
+  <text class="copy" x="107" y="112" text-anchor="middle" font-size="24" font-weight="800" fill="#dfff81">a.</text>
+  <text class="copy" x="155" y="98" font-size="27" font-weight="720" fill="#16332e">Ausgeben</text>
+  <text class="copy" x="155" y="122" font-size="14" font-weight="520" fill="#62736f">Personal expenses</text>
+  <text class="copy" x="88" y="240" font-size="18" font-weight="750" letter-spacing="2.2" fill="#62736f">PASSAU, GERMANY</text>
+  <text class="copy" x="88" y="302" font-size="52" font-weight="680" letter-spacing="-2.6" fill="#16332e">Your spending,</text>
+  <text class="copy" x="88" y="356" font-size="52" font-weight="680" letter-spacing="-2.6" fill="#16332e">made clear.</text>
+  <text class="copy" x="88" y="420" font-size="18" font-weight="470" fill="#62736f">Log it in seconds. Keep it on your device.</text>
+  <rect x="88" y="473" width="188" height="54" rx="27" fill="#0d3f37"/>
+  <text class="copy" x="182" y="507" text-anchor="middle" font-size="16" font-weight="700" fill="#ffffff">Add expense  →</text>
+  <g transform="translate(625 56)">
+    <rect width="487" height="518" rx="35" fill="#fffdf8" stroke="#d9d6cd"/>
+    <rect x="25" y="25" width="437" height="263" rx="27" fill="#0d3f37"/>
+    <circle cx="415" cy="230" r="103" fill="none" stroke="#dfff81" stroke-width="38" opacity=".12"/>
+    <text class="copy" x="53" y="64" font-size="13" font-weight="620" fill="#ffffff" opacity=".62">SPENT IN</text>
+    <text class="copy" x="53" y="104" font-size="15" font-weight="700" fill="#dfff81">Juli 2026</text>
+    <g class="old-total">
+      <text class="copy mono" x="53" y="175" font-size="55" font-weight="660" letter-spacing="-2.6" fill="#ffffff">86,30 €</text>
+    </g>
+    <g class="new-total" opacity="0">
+      <text class="copy mono" x="53" y="175" font-size="55" font-weight="660" letter-spacing="-2.6" fill="#ffffff">111,10 €</text>
+    </g>
+    <text class="copy" x="53" y="207" font-size="13" font-weight="500" fill="#ffffff" opacity=".56">4 expenses · 3 days tracked</text>
+    <rect x="46" y="226" width="395" height="43" rx="13" fill="#ffffff" opacity=".07"/>
+    <text class="copy" x="63" y="252" font-size="11" fill="#ffffff" opacity=".58">AVERAGE PER ACTIVE DAY</text>
+    <text class="copy mono" x="421" y="252" text-anchor="end" font-size="13" font-weight="700" fill="#dfff81">37,03 €</text>
+    <text class="copy" x="30" y="331" font-size="12" font-weight="750" letter-spacing="1.4" fill="#62736f">TODAY</text>
+    <rect x="25" y="350" width="437" height="70" rx="18" fill="#f8f5ed" stroke="#e7e2d8"/>
+    <rect x="41" y="364" width="42" height="42" rx="13" fill="#e5eed8"/>
+    <text class="copy" x="62" y="391" text-anchor="middle" font-size="15" font-weight="780" fill="#0d3f37">C</text>
+    <text class="copy" x="99" y="382" font-size="15" font-weight="670" fill="#16332e">Coffee at Anton</text>
+    <text class="copy" x="99" y="400" font-size="11" fill="#62736f">Today</text>
+    <text class="copy mono" x="441" y="389" text-anchor="end" font-size="15" font-weight="730" fill="#16332e">4,20 €</text>
+    <g class="new-row" opacity="0">
+      <rect x="25" y="432" width="437" height="70" rx="18" fill="#f8f5ed" stroke="#d9e5cd"/>
+      <rect x="41" y="446" width="42" height="42" rx="13" fill="#ffe5dc"/>
+      <text class="copy" x="62" y="473" text-anchor="middle" font-size="15" font-weight="780" fill="#873c29">G</text>
+      <text class="copy" x="99" y="464" font-size="15" font-weight="670" fill="#16332e">Groceries at REWE</text>
+      <text class="copy" x="99" y="482" font-size="11" fill="#62736f">Saved on this device</text>
+      <text class="copy mono" x="441" y="471" text-anchor="end" font-size="15" font-weight="730" fill="#16332e">24,80 €</text>
+    </g>
+  </g>
+  <circle class="pulse" cx="1037" cy="515" r="34" fill="#dfff81" opacity=".18"/>
+  <g class="tap">
+    <circle cx="1037" cy="515" r="24" fill="#0d3f37"/>
+    <path d="M1037 504v22M1026 515h22" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+  </g>
+</svg>
