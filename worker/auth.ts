@@ -14,7 +14,8 @@ const ACCOUNTS: Readonly<Record<UserId, AuthenticatedUser>> = {
 };
 
 const PASSWORD_ALGORITHM = "pbkdf2-sha256";
-const PASSWORD_ITERATIONS = 600_000;
+// The hosted Workers Web Crypto runtime caps PBKDF2 at 100,000 iterations.
+const PASSWORD_ITERATIONS = 100_000;
 const SESSION_VERSION = 1;
 const SESSION_MAX_AGE_SECONDS = 14 * 24 * 60 * 60;
 const SESSION_CLOCK_SKEW_SECONDS = 60;
@@ -99,7 +100,7 @@ function parsePasswordVerifier(value: string): {
     extra !== undefined
   ) {
     throw new AuthConfigurationError(
-      "Password verifier must use pbkdf2-sha256 with 600000 iterations.",
+      "Password verifier must use pbkdf2-sha256 with 100000 iterations.",
     );
   }
 

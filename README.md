@@ -63,7 +63,7 @@ flowchart LR
 ## Authentication and security
 
 - Passwords are checked against per-account PBKDF2-SHA-256 verifiers with
-  unique salts and 600,000 iterations.
+  unique salts and the Worker runtime maximum of 100,000 iterations.
 - Unknown account names use a dummy verifier to reduce timing differences.
 - Successful login creates a 14-day HMAC-SHA-256 signed session in an
   `HttpOnly`, `SameSite=Strict` cookie; HTTPS adds `Secure` and the `__Host-`

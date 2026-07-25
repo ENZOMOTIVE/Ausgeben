@@ -95,7 +95,7 @@ test("uses shared D1 storage, hardened sessions, and monthly compaction", async 
   assert.match(api, /Cache-Control/);
 
   assert.match(auth, /PBKDF2/);
-  assert.match(auth, /600_000/);
+  assert.match(auth, /100_000/);
   assert.match(auth, /HMAC/);
   assert.match(auth, /HttpOnly/);
   assert.match(auth, /SameSite=Strict/);
