@@ -255,6 +255,8 @@ function mapApiError(error: unknown): Response {
     );
   }
 
+  console.error("[Ausgeben API] Unexpected request failure", error);
+
   return errorResponse(
     500,
     "INTERNAL_ERROR",
